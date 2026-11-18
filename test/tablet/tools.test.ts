@@ -14,6 +14,7 @@ import { resetPen, setPenDevice, setToolPen } from '../../src/tablet/settings';
 import { flowFactor, opacityFactor, pressureSize, sizeFactor, tiltSize } from '../../src/tablet/dynamics';
 import { strokeOutline } from '../../src/core/render';
 import { ctx, drag, pixelStore, ptr, shapesNow, vectorStore } from '../tools/helpers';
+import { setPencil } from '../helpers/pencil';
 import '../../src/pixel';
 
 const pen = (x: number, y: number, pressure: number, extra: Partial<Parameters<typeof ptr>[2]> = {}) => ptr(x, y, { hasPressure: true, pressure, pointerType: 'pen', ...extra });
@@ -172,16 +173,19 @@ describe('pixel tools with a pen', () => {
   };
   it('the pixel brush gets bigger with a harder press when switched on', () => {
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 8, pixelPerfect: false });
+    setToolSettings({ pixelPerfect: false });
+    setPencil({ size: 8 });
     stroke(brushTool, [0.1, 0.1, 0.1, 0.1], {}, 10);
     const off = painted();
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 8, pixelPerfect: false });
+    setToolSettings({ pixelPerfect: false });
+    setPencil({ size: 8 });
     setToolPen('brush', { size: true });
     stroke(brushTool, [0.1, 0.1, 0.1, 0.1], {}, 10);
     const light = painted();
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 8, pixelPerfect: false });
+    setToolSettings({ pixelPerfect: false });
+    setPencil({ size: 8 });
     setToolPen('brush', { size: true });
     stroke(brushTool, [1, 1, 1, 1], {}, 10);
     const hard = painted();
@@ -190,7 +194,8 @@ describe('pixel tools with a pen', () => {
   });
   it('a one pixel pixel perfect line keeps its size however hard you press', () => {
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 1, pixelPerfect: true });
+    setToolSettings({ pixelPerfect: true });
+    setPencil({ size: 1 });
     setToolPen('brush', { size: true, tilt: true });
     stroke(brushTool, [1, 1, 1, 1], { tiltX: 80, tiltY: 0 }, 10);
     expect(painted()).toBeLessThan(40);

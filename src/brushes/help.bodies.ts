@@ -94,17 +94,17 @@ help:brush-presets help:brush-tips help:tool-options`,
 
 **A brush from your own drawing:**
 1. Select what you drew (the **Select** tool, **V**). On a pixel layer, select some pixels instead.
-2. Press **Brush from selection** in the brush options (or **Ctrl+Alt+B**).
+2. Press **Brush from selection** (**Ctrl+Alt+B**).
 3. Draw. On a drawing layer your shape is stamped along the line, in your colour. On a pixel layer you get a picture brush, up to 32 by 32 pixels.
 
-A pixel brush with more than one colour asks once whether to keep its own colours or paint in yours (change it in **Preferences, Behaviour**). **Back to the usual brush** puts the square or round one back.
+A pixel brush with more than one colour asks once whether to keep its own colours or paint in yours (change it in **Preferences, Behaviour**). **Back to the usual brush** puts a one pixel square back.
 
 **Saved brushes remember the tip,** shape of your own included. See [saved brushes](help:brush-presets).
 
 **When you export:** PNG, GIF, video, sprite sheets and Photoshop show the paper as drawn. PDF, Illustrator and Lottie make a picture of the layer. SVG writes tiny shapes instead, which look a little different and make the file bigger.
 
 **Good to know:**
-- Tips are for drawing layers. On a pixel layer the brush paints pixels.
+- Tips are for drawing layers. On a pixel layer the Brush uses the [Pixel brush](help:pixel-brush)'s.
 - On a merge layer a line joins what it touches and comes out as plain shapes.
 - A shape you made into a brush is a silhouette: it takes the colour you have picked.
 - Tips can't be changed on a line once it is drawn: undo, pick another, draw it again.

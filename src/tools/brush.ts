@@ -1,7 +1,8 @@
 /**
  * Brush [B]. On a vector layer it paints a smooth, pressure-aware stroke (perfect-freehand), kept as points so it can
- * be restyled later. On a pixel layer it's a pixel pencil: hard pixels, a size in art pixels, "pixel perfect" corners,
- * and Shift+click for a straight line from the last pixel.
+ * be restyled later. On a pixel layer it draws with the Pixel brush's brush (one panel, one list): a plain hard one is the
+ * pixel pencil (hard pixels, a size in art pixels, "pixel perfect" corners, Shift+click for a straight line from the last
+ * pixel), and any other is laid as dabs by the same code as the Pixel brush tool (src/dab/painter.ts).
  */
 import { forgetHover, hoverSpot, hoverStart } from './endSnap';
 import { registerTool, type Tool, type ToolContext, type ToolPointer } from '../core/registry';
@@ -21,11 +22,17 @@ import { viewPixelSize, viewSizeFactor } from './view-size';
 import { sizeFactor, vectorDynamics } from '../tablet/dynamics';
 import { activeVectorMirror, mirrorSpots } from './mirror';
 import { brushForLine } from '../geometry/tip';
-import { readPixelStamp, stampCells } from '../brushes/stamps';
+import { stampCells } from '../brushes/stamps';
+import { dabPainter } from '../dab/painter';
+import { footprintOf, isPencilDab } from '../dab/pencil';
+import { getDab } from '../dab/settings';
 
 let vec: VectorStroke | null = null;
 let pix: PixelStroke | null = null;
 let pixColor = '';
+/** Which way the pixel stroke in hand is drawn: the pencil, or the dab engine (chosen when it starts, so a stroke never switches). */
+let way: 'pencil' | 'dabs' | null = null;
+const dabs = dabPainter('brush', false);
 
 function down(e: ToolPointer, ctx: ToolContext): void {
   forgetHover();
@@ -47,9 +54,14 @@ function down(e: ToolPointer, ctx: ToolContext): void {
   if (layer.kind !== 'pixel') return;
   const rgba = parseHex(ui.color);
   if (!rgba) return ctx.hint("That colour isn't something I can paint with. Pick one from the Colours panel.");
-  const s = getToolSettings();
-  const stamp = readPixelStamp(s.pixelStamp) ?? undefined;
-  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(s.pixelBrushSize), shape: s.pixelBrushShape, perfect: s.pixelPerfect, stamp });
+  const brush = getDab();
+  if (!isPencilDab(brush)) {
+    way = 'dabs';
+    return dabs.down(e, ctx);
+  }
+  way = 'pencil';
+  const fp = footprintOf(brush);
+  pix = new PixelStroke(doc, layer, ui.frame, { color: rgba, size: viewPixelSize(fp.size), shape: fp.shape, perfect: getToolSettings().pixelPerfect, stamp: fp.stamp ?? undefined });
   pixColor = ui.color;
   pix.scale(sizeFactor('brush', e));
   const here = pix.cell(e.x, e.y);
@@ -64,12 +76,17 @@ function hover(e: ToolPointer, ctx: ToolContext): void {
   else forgetHover();
 }
 
-function leave(): void {
+function leave(ctx: ToolContext): void {
   forgetHover();
+  if (way === 'dabs') {
+    dabs.leave(ctx);
+    way = null;
+  }
 }
 
 function move(e: ToolPointer, ctx: ToolContext): void {
-  if (vec) vec.add(e, ctx.zoom);
+  if (way === 'dabs') dabs.move(e, ctx);
+  else if (vec) vec.add(e, ctx.zoom);
   else if (pix) {
     pix.scale(sizeFactor('brush', e));
     pix.moveTo(pix.cell(e.x, e.y));
@@ -77,6 +94,11 @@ function move(e: ToolPointer, ctx: ToolContext): void {
 }
 
 function up(e: ToolPointer, ctx: ToolContext): void {
+  if (way === 'dabs') {
+    way = null;
+    dabs.up(e, ctx);
+    return;
+  }
   if (vec) {
     const v = vec;
     vec = null;
@@ -93,6 +115,8 @@ function up(e: ToolPointer, ctx: ToolContext): void {
 }
 
 function cancel(ctx: ToolContext): void {
+  if (way === 'dabs') dabs.cancel(ctx);
+  way = null;
   vec?.stop();
   vec = null;
   pix?.discard();
@@ -101,6 +125,7 @@ function cancel(ctx: ToolContext): void {
 }
 
 function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
+  if (way === 'dabs') return dabs.overlay(g, ctx);
   if (vec) return vec.overlay(g, ctx.zoom);
   if (pix) return;
   const h = getHover();
@@ -108,9 +133,10 @@ function overlay(g: CanvasRenderingContext2D, ctx: ToolContext): void {
   const { ui } = store().get();
   const layer = activeLayer().layer;
   if (layer?.kind === 'pixel') {
-    const s = getToolSettings();
-    const stamp = readPixelStamp(s.pixelStamp);
-    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(s.pixelBrushSize), s.pixelBrushShape, stamp?.keep ? null : ui.color, stamp ? stampCells(stamp) : undefined);
+    const brush = getDab();
+    if (!isPencilDab(brush)) return dabs.overlay(g, ctx);
+    const { size, shape, stamp } = footprintOf(brush);
+    drawPixelFootprint(g, ctx, docToPixel(h.x, h.y, layer.pixelSize), layer.pixelSize, viewPixelSize(size), shape, stamp?.keep ? null : ui.color, stamp ? stampCells(stamp) : undefined);
   } else {
     const m = activeVectorMirror();
     const at = hoverSpot() ?? h;

@@ -317,7 +317,7 @@ describe('the Preview', () => {
 describe('the pixel bar', () => {
   it('knows which size each tool uses', () => {
     expect(BAR_SIZES).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(sizeSettingFor('brush')).toBe('pixelBrushSize');
+    expect(sizeSettingFor('brush')).toBe('dabSize');
     expect(sizeSettingFor('shade')).toBe('pixelBrushSize');
     expect(sizeSettingFor('eraser')).toBe('eraserPixelSize');
     expect(sizeSettingFor('dither')).toBe('ditherSize');

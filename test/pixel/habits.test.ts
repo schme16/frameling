@@ -6,6 +6,8 @@ import { store } from '../../src/core/store';
 import { DEFAULT_TOOL_SETTINGS, getToolSettings, setToolSettings } from '../../src/tools/settings';
 import { DEFAULT_PIXEL_SETTINGS, getPixelSettings, setPixelSettings } from '../../src/pixel/settings';
 import { setDocPalette } from '../../src/pixel/commands';
+import { getDab } from '../../src/dab/settings';
+import { setPencil } from '../helpers/pencil';
 import { MAX_BRUSH, MAX_DITHER, stepPaletteColor, stepSize } from '../../src/pixel/habits';
 import { altPicks, plainPointer } from '../../src/tools/eyedropper';
 import { dispatchKey, resetKeyboard, tabIsShortcut } from '../../src/ui/keyboard';
@@ -17,18 +19,18 @@ import { pixelStore, ptr, vectorStore } from '../tools/helpers';
 
 const run = (id: string) => getCommand(id)!.run();
 const enabled = (id: string) => (getCommand(id)!.enabled ? getCommand(id)!.enabled!(store().get()) : true);
-const SIZES = { pixelBrushSize: 3, eraserPixelSize: 5, ditherSize: 4, spraySize: 8 };
+const SIZES = { pixelBrushSize: 3, dabSize: 3, eraserPixelSize: 5, ditherSize: 4, spraySize: 8 };
 
 describe('stepSize', () => {
   it('steps the brush, the eraser and dither by one', () => {
-    expect(stepSize('brush', SIZES, 1)).toEqual({ set: { pixelBrushSize: 4 } });
+    expect(stepSize('brush', SIZES, 1)).toEqual({ set: { dabSize: 4 } });
     expect(stepSize('shade', SIZES, -1)).toEqual({ set: { pixelBrushSize: 2 } });
     expect(stepSize('eraser', SIZES, 1)).toEqual({ set: { eraserPixelSize: 6 } });
     expect(stepSize('dither', SIZES, -1)).toEqual({ set: { ditherSize: 3 } });
   });
   it('stops at 1 and at the biggest', () => {
-    expect(stepSize('brush', { ...SIZES, pixelBrushSize: 1 }, -1)).toBeNull();
-    expect(stepSize('brush', { ...SIZES, pixelBrushSize: MAX_BRUSH }, 1)).toBeNull();
+    expect(stepSize('brush', { ...SIZES, dabSize: 1 }, -1)).toBeNull();
+    expect(stepSize('brush', { ...SIZES, dabSize: 40 }, 1, 40)).toBeNull();
     expect(stepSize('dither', { ...SIZES, ditherSize: MAX_DITHER }, 1)).toBeNull();
   });
   it('the pencil is the one sized tool: it steps its own size and stays the pencil', () => {
@@ -63,15 +65,16 @@ describe('the size commands', () => {
   beforeEach(() => {
     setToolSettings({ ...DEFAULT_TOOL_SETTINGS });
     setPixelSettings({ ...DEFAULT_PIXEL_SETTINGS });
+    setPencil();
     pixelStore();
   });
   it('bigger and smaller change the brush you are holding', () => {
     store().setUi({ tool: 'brush' });
     run('pixel.sizeUp');
     run('pixel.sizeUp');
-    expect(getToolSettings().pixelBrushSize).toBe(3);
+    expect(getDab().size).toBe(3);
     run('pixel.sizeDown');
-    expect(getToolSettings().pixelBrushSize).toBe(2);
+    expect(getDab().size).toBe(2);
   });
   it('bigger with the pencil stays on the pencil and gives it a size', () => {
     store().setUi({ tool: 'pencil' });
@@ -177,6 +180,7 @@ describe('through the keyboard, with the Aseprite keys picked and without', () =
     resetKeyboard();
     setPrefs({ keymapSet: 'pixel', keymap: {} });
     setToolSettings({ ...DEFAULT_TOOL_SETTINGS });
+    setPencil();
     pixelStore();
     store().setUi({ tool: 'brush' });
   });
@@ -187,9 +191,9 @@ describe('through the keyboard, with the Aseprite keys picked and without', () =
   it('+ and - change the brush', () => {
     expect(press('+')).toBe(true);
     expect(press('=')).toBe(true);
-    expect(getToolSettings().pixelBrushSize).toBe(3);
+    expect(getDab().size).toBe(3);
     expect(press('-')).toBe(true);
-    expect(getToolSettings().pixelBrushSize).toBe(2);
+    expect(getDab().size).toBe(2);
   });
   it('[ and ] step the palette', () => {
     setDocPalette({ name: 'T', colors: ['#000000', '#444444', '#888888'] });
@@ -216,9 +220,9 @@ describe('through the keyboard, with the Aseprite keys picked and without', () =
     setPrefs({ keymapSet: 'frameling' });
     resetKeyboard();
     expect(press('+')).toBe(true);
-    expect(getToolSettings().pixelBrushSize).toBe(2);
+    expect(getDab().size).toBe(2);
     press('-');
-    expect(getToolSettings().pixelBrushSize).toBe(2);
+    expect(getDab().size).toBe(2);
   });
   it('Frameling\'s own keys step the palette and zoom too', () => {
     setPrefs({ keymapSet: 'frameling' });

@@ -5,7 +5,6 @@ import { registerChoice, withChoice } from '../core/choices';
 import type { BrushSettings, BrushTip, StampShape, TipKind } from '../core/format';
 import { store } from '../core/store';
 import { activeLayer, activeDrawing } from '../tools/edit';
-import { getToolSettings, setToolSettings } from '../tools/settings';
 import { pickTool } from '../tools/pick';
 import { showPanel } from '../ui/dock';
 import { toast } from '../ui/toast';
@@ -17,7 +16,9 @@ import { choiceWord } from '../words/choices';
 import { parseTipId } from './tipList';
 import { parseStickId } from './stickList';
 import { parsePixelStickId, parsePixelTipId } from './pixelTipList';
-import { getDab, setDab } from '../dab/settings';
+import { DEFAULT_DAB } from '../dab/maths';
+import { dabFromPencil } from '../dab/pencil';
+import { getDab, setDab, setWholeDab } from '../dab/settings';
 import { setMedium } from '../dry/settings';
 import type { DryId } from '../dry/maths';
 
@@ -185,7 +186,7 @@ export function makePixelBrush(into?: (stamp: PixelStamp) => void): boolean {
   const pixels = dr ? gridPixels(dr, a.width, a.height) : new Uint8ClampedArray(a.width * a.height * 4);
   const first = pixelStampFrom(pixels, a.width, m, false);
   if (!first.ok) return warn(first.why === 'big' ? `That selection is too big for a brush. Brushes can be up to ${MAX_STAMP} by ${MAX_STAMP} pixels.` : 'Nothing is drawn in that selection, so there is no brush to make. Select some pixels with colour in them.');
-  const before = getToolSettings().pixelStamp;
+  const before = getDab();
   const finish = (keep: boolean) => {
     const r = pixelStampFrom(pixels, a.width, m, keep);
     if (!r.ok) return;
@@ -194,11 +195,11 @@ export function makePixelBrush(into?: (stamp: PixelStamp) => void): boolean {
       toast(r.stamp.keep ? 'Made a picture tip from your selection, in its own colours.' : 'Made a picture tip from your selection, painting in your colour.', { kind: 'success' });
       return;
     }
-    setToolSettings({ pixelStamp: r.stamp });
+    setWholeDab(dabFromPencil({ size: 1, shape: 'square', stamp: r.stamp }));
     showOptions();
     toast(r.stamp.keep ? 'Made a brush from your selection. Click to stamp it; drag to lay copies side by side.' : 'Made a brush from your selection, painting in your colour.', {
       kind: 'success',
-      action: { label: 'Undo', run: () => setToolSettings({ pixelStamp: before }) },
+      action: { label: 'Undo', run: () => setWholeDab(before) },
     });
   };
   // More than one colour in it: ask once whether it keeps them, then remember.
@@ -206,16 +207,19 @@ export function makePixelBrush(into?: (stamp: PixelStamp) => void): boolean {
   return true;
 }
 
-/** The pixel brush made from a selection, if there is one. */
-export const pixelBrushStamp = (): PixelStamp | null => readPixelStamp(getToolSettings().pixelStamp);
+/** The picture the pixel brush paints with (a brush made from a selection, or a picture tip), if it has one. */
+export const pixelBrushStamp = (): PixelStamp | null => {
+  const b = getDab();
+  return b.tip === 'picture' ? readPixelStamp(b.picture) : null;
+};
 
-/** Back to the square or round pixel brush. */
+/** Back to the usual pixel brush: a one pixel square, with the rest of what the brush had left as it was. */
 export function clearPixelStamp(): void {
-  setToolSettings({ pixelStamp: null });
+  setDab({ tip: 'square', picture: null, size: 1, spacing: DEFAULT_DAB.spacing });
 }
 
 /** Switches a picture brush between its own colours and the colour you picked. */
 export function setPixelStampKeep(keep: boolean): void {
   const st = pixelBrushStamp();
-  if (st) setToolSettings({ pixelStamp: { ...st, keep: keep && hasColours(st) } });
+  if (st) setDab({ picture: { ...st, keep: keep && hasColours(st) } });
 }

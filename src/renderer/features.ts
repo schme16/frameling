@@ -38,7 +38,7 @@ import { installStreamboard, syncBoardCommands } from '../streamboard';
 import { registerFeatures } from '../features/host';
 import '../features/streamCommands';
 import { startRememberingUi } from '../tools/rememberUi';
-import { startBrushPresets } from '../brushes';
+import { movePencilOnce, startBrushPresets } from '../brushes';
 
 // Beta reports: a panel and a command. Nothing is sent without the person pressing Send.
 installBeta();
@@ -79,4 +79,6 @@ syncBoardCommands();
 startRememberingUi();
 
 // Saved brushes: one palette command each, and the "save every change" choice.
+// The plain Brush's old size, shape and picture move into the shared pixel brush first, once (see dab/pencil.ts).
+movePencilOnce();
 startBrushPresets();

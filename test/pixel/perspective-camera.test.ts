@@ -16,6 +16,7 @@ import { perspectivePixelOutline } from '../../src/pixel/perspective';
 import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settings';
 import '../../src/pixel';
 import { ctx, drag, pixelStore } from '../tools/helpers';
+import { setPencil } from '../helpers/pencil';
 
 // 64 x 64 document at 8 per pixel: an 8 x 8 grid. at(px, py) is the middle of an art pixel.
 const at = (px: number, py: number): [number, number] => [px * 8 + 4, py * 8 + 4];
@@ -63,7 +64,7 @@ describe('a pixel brush size through the camera', () => {
 
   it('the brush is smaller on the grid through a zoomed in camera, so it looks the size you set', () => {
     zoomedCamera(2);
-    setToolSettings({ pixelBrushSize: 4, pixelBrushShape: 'square' });
+    setPencil({ size: 4 });
     store().setUi({ color: '#ff0000' });
     drag(brushTool, ctx(), [at(4, 4), at(4, 4)]);
     expect(count()).toBe(4);
@@ -71,7 +72,7 @@ describe('a pixel brush size through the camera', () => {
 
   it('the brush is bigger through a zoomed out camera', () => {
     zoomedCamera(0.5);
-    setToolSettings({ pixelBrushSize: 2, pixelBrushShape: 'square' });
+    setPencil({ size: 2 });
     store().setUi({ color: '#ff0000' });
     drag(brushTool, ctx(), [at(4, 4), at(4, 4)]);
     expect(count()).toBe(16);
@@ -79,7 +80,8 @@ describe('a pixel brush size through the camera', () => {
 
   it('is the plain size when not looking through the camera, and the eraser follows the rule too', () => {
     pixelStore();
-    setToolSettings({ pixelBrushSize: 4, pixelBrushShape: 'square', eraserPixelSize: 4 });
+    setToolSettings({ eraserPixelSize: 4 });
+    setPencil({ size: 4 });
     store().setUi({ color: '#ff0000' });
     drag(brushTool, ctx(), [at(4, 4), at(4, 4)]);
     expect(count()).toBe(16);

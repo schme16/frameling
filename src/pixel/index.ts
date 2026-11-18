@@ -152,5 +152,6 @@ for (const id of ['brush', 'eraser']) {
     own?.(g, ctx);
     drawMirrorLines(g, ctx);
   };
-  t.options = withMirror(t.options);
+  // The Brush's pixel panel is the Pixel brush's, which has the mirror controls of its own.
+  if (id !== 'brush') t.options = withMirror(t.options);
 }

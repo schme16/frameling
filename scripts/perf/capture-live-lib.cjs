@@ -22,6 +22,9 @@ const docScript = (kind) => `(() => {
   F.store().load(doc);
   F.store().setUi({ tool: 'brush', activeLayerId: layer.id, frame: 0, color: '#d6204a', fillColor: '#4fa3ff', strokeOn: true, selection: [], brush: { ...F.store().get().ui.brush, size: 24 } });
   F.toolSettings.set({ pixelBrushSize: 14, pixelBrushShape: 'round', pixelPerfect: false, pencilSize: 10, eraserSize: 40, eraserPixelSize: 12 });
+  // The plain Brush on a pixel layer takes its size and shape from the shared pixel brush (older builds ignore this).
+  window.__framelingDab?.reset();
+  window.__framelingDab?.set({ size: 14, tip: 'round' });
   F.run('view.fit');
   return true;
 })()`;

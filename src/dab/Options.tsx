@@ -1,5 +1,6 @@
 // Tool options for the Pixel brush: the saved brushes first, then the tip, size, spacing and edges (the things you reach
 // for), and the shape, scatter and flow folded under them. Says in plain words when a smooth edge is being dithered, and why.
+import type { ReactNode } from 'react';
 import { findLayer } from '../core/doc';
 import { setChoice, useChoice } from '../core/choices';
 import { useStore } from '../core/store';
@@ -8,15 +9,18 @@ import { BrushPanel } from '../brushes/BrushPanel';
 import { PixelPartsBox } from '../brushes/PartsOptions';
 import { PixelPreview } from '../brushes/PixelSample';
 import { StampPicture } from '../brushes/PixelStampOptions';
-import { makePixelBrush } from '../brushes/tips';
+import { clearPixelStamp, makePixelBrush } from '../brushes/tips';
 import { hasColours } from '../brushes/stamps';
 import { SOFT_EDGE_CHOICE } from '../soft/choices';
 import { MirrorOptions } from '../tools/options/MirrorOptions';
-import { useToolSettings } from '../tools/settings';
+import { setToolSettings, useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
 import { FLOW_RANGE, ROUND_RANGE, SCATTER_RANGE, SIZE_RANGE, SPACING_RANGE, type TipShape } from './maths';
 import { drivesFrom } from './dynamics';
 import { ColourSection, DynamicsSection, PaperSection, TextureSection } from './DynamicsOptions';
+import { typedSize } from '../tools/brushRange';
+import { useBrushRange } from '../tools/options/useBrushRange';
+import { isPencilDab } from './pencil';
 import { setDab, useDab } from './settings';
 import { editPictureTip, pictureTipFromFile } from './pictureTip';
 
@@ -74,6 +78,11 @@ function PictureTip() {
       <ActionButton control="picture-file" command="pixelbrush.picture.file" onClick={() => void pictureTipFromFile()} title="Start from a picture file: a PNG, GIF, JPEG, WebP or BMP. It is shrunk to fit and opens in the editor.">
         From a picture file...
       </ActionButton>
+      {picture && (
+        <ActionButton control="picture-reset" command="brush.pixelReset" onClick={clearPixelStamp} title="Go back to a plain one pixel square brush">
+          Back to the usual brush
+        </ActionButton>
+      )}
       <ActionButton control="tip-from-selection" onClick={() => void pictureFromSelection()} title="Turn the pixels you have selected into the tip (up to 32 by 32)">
         {picture ? 'Use the selection instead' : 'Make from the selection'}
       </ActionButton>
@@ -81,8 +90,29 @@ function PictureTip() {
   );
 }
 
-export function DabOptionsPanel() {
+/** Pixel perfect, for the plain Brush: it tidies a plain hard line, so on any other brush it says why it does nothing. */
+function PixelPerfect({ pencil }: { pencil: boolean }) {
+  const perfect = useToolSettings((s) => s.pixelPerfect);
+  return (
+    <>
+      <Toggle
+        control="pixel-perfect"
+        label="Pixel perfect"
+        checked={perfect}
+        onChange={(v) => setToolSettings({ pixelPerfect: v })}
+        hint={pencil ? 'Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1.' : 'Tidies the corners of a plain hard line. This brush is laid as dabs (soft edge, scatter, spacing, paper and the like), so it has nothing to tidy.'}
+      />
+      {pencil && <Tip>Hold Shift and click to draw a straight line from where you last stopped.</Tip>}
+    </>
+  );
+}
+
+/** The Pixel brush's options, or with `plain` the same panel for the plain Brush (B) on a pixel layer: it adds Pixel perfect and takes the Brush's Pen page. */
+export function DabOptionsPanel({ plain = false }: { plain?: boolean } = {}) {
   const b = useDab((x) => x);
+  const pencil = plain && isPencilDab(b);
+  // The plain Brush's size reaches as far as the canvas does and takes a typed size past that; the Pixel brush's stays as it was.
+  const range = useBrushRange(true);
   return (
     <BrushPanel
       side="pixel"
@@ -90,7 +120,7 @@ export function DabOptionsPanel() {
       parts={<PixelPartsBox tip stick={false} />}
       paper={<PaperSection />}
       controls={b.tip === 'picture' ? <PictureTip /> : undefined}
-      size={<Slider control="size" label="Size" value={b.size} min={SIZE_RANGE.min} max={Math.min(SIZE_RANGE.max, 120)} typeMax={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ size: v })} hint={b.tip === 'picture' ? 'The longer side of the picture. A picture the same size as it was drawn goes down pixel for pixel.' : undefined} />}
+      size={<Slider control="size" label="Size" value={b.size} min={SIZE_RANGE.min} max={plain ? range.max : Math.min(SIZE_RANGE.max, 120)} typeMax={plain ? range.typedMax : SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setDab({ size: plain ? typedSize(v, true) : v })} hint={b.tip === 'picture' ? 'The longer side of the picture. A picture the same size as it was drawn goes down pixel for pixel.' : undefined} />}
       afterSize={
         <>
           <Slider
@@ -116,6 +146,7 @@ export function DabOptionsPanel() {
           />
           {b.tip !== 'picture' && <Slider control="hardness" label="Hardness" value={Math.round(b.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setDab({ hardness: v / 100 })} hint={b.aliased ? 'How firm the edge is. With sharp pixels a soft edge becomes a pattern of dots instead of a fade.' : 'How much of the dab is solid before it fades.'} />}
           <EdgeNote />
+          {plain && <PixelPerfect pencil={pencil} />}
         </>
       }
       more={
@@ -134,10 +165,13 @@ export function DabOptionsPanel() {
           <TextureSection />
           <ColourSection />
           <MirrorOptions />
-          <Tip>Dabs go along the line you draw. Tight spacing makes a solid line; wide spacing makes dots or stamps.</Tip>
-          <PenOptions tool="pixel-brush" size={!drivesFrom(b.dynamics, 'size', ['pressure', 'tilt'])} flow={!drivesFrom(b.dynamics, 'flow', ['pressure', 'tilt'])} />
+          {!pencil && <Tip>Dabs go along the line you draw. Tight spacing makes a solid line; wide spacing makes dots or stamps.</Tip>}
+          <PenOptions tool={plain ? 'brush' : 'pixel-brush'} size={!drivesFrom(b.dynamics, 'size', ['pressure', 'tilt'])} flow={!pencil && !drivesFrom(b.dynamics, 'flow', ['pressure', 'tilt'])} />
         </>
       }
     />
   );
 }
+
+/** The plain Brush (B) on a pixel layer: the Pixel brush's panel and list, with Pixel perfect. */
+export const BrushOnPixelsPanel = (): ReactNode => <DabOptionsPanel plain />;

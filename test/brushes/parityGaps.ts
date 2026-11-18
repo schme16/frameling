@@ -158,7 +158,7 @@ export const PIXEL_ONLY_CONTROLS: ControlGap[] = [
   { side: 'pixel', ids: ['paper-thin'], what: "Thin the paint instead of stopping it", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['paper-hold'], what: "How much it holds the whole line back", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['picture-own-colours'], what: "Its own colours (a picture tip)", clears: "piece 4: the shared Tip picker" },
-  { side: 'pixel', ids: ['stamp-reset'], what: "Back to the usual brush (a picture brush on the plain Brush)", clears: "piece 5: the plain Brush on a pixel layer takes the shared panel" },
+  { side: 'pixel', ids: ['picture-reset'], what: "Back to the usual brush (a picture tip)", clears: "piece 4: the shared Tip picker" },
   { side: 'pixel', ids: ['picture-draw', 'picture-file'], what: "Draw a picture... and From a picture file... (a picture tip)", clears: "piece 4: the shared Tip picker" },
   { side: 'pixel', ids: ['edges'], what: "Edges: Sharp pixels or Smooth", clears: "by design: vector lines are always smooth" },
   { side: 'pixel', ids: ['hardness'], what: "Hardness (and Edge on chalk and charcoal)", clears: "piece 9: a soft edge on a vector stroke" },
@@ -183,7 +183,6 @@ export const PIXEL_ONLY_CONTROLS: ControlGap[] = [
   { side: 'pixel', ids: ['builds-up'], what: "Builds up while you hold still (Airbrush)", clears: "piece 10: time on a vector point" },
   { side: 'pixel', ids: ['press'], what: "Pressure (Chalk and charcoal)", clears: "piece 4: Chalk and charcoal takes the shared panel" },
   { side: 'pixel', ids: ['pixel-perfect'], what: "Pixel perfect", clears: "by design: pixel art only" },
-  { side: 'pixel', ids: ['plain-shape'], what: "Shape: Square or Round (the plain Brush on a pixel layer)", clears: "piece 5: the plain Brush on a pixel layer takes the shared panel" },
 ];
 
 export const ONE_SIDED_CONTROLS: ControlGap[] = [...VECTOR_ONLY_CONTROLS, ...PIXEL_ONLY_CONTROLS];

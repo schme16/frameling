@@ -363,7 +363,7 @@ when comparing two drawings for "same look" (as `id` is ignored).
   read: anything that is not a tip makes the line plain, numbers are held to their range. The line keeps its points; the
   fills and lines a tip draws are worked out by `src/geometry/tipShapes.ts` when drawing and exporting (`poseAt` swaps them
   in, see `src/core/tips.ts`), never stored. A saved brush (`src/brushes`) and a shared brush file hold the same `tip`.
-  A pixel brush made from a selection is not in the document: it is the `pixelStamp` tool setting (`src/brushes/stamps.ts`).
+  A pixel brush made from a selection is not in the document: it is the picture tip of the shared pixel brush, `getDab().picture` (`src/dab/settings.ts`, `src/brushes/stamps.ts`). The tool setting `pixelStamp` is only read once, to move an older Brush's picture there (`src/dab/pencil.ts`, `movePencil`).
   Saved and shared brushes (`src/brushes/model.ts`, file `*.frameling-brushes.json`, still version 1) have a `tool`: `'brush'` (the
   default, so every old file reads as before) or `'pixel'`, which holds `pixel` instead of `brush`: a `PixelSpec` (`src/dab/spec.ts`) that is
   one of `{ kind: 'dab', dab }` (the Pixel brush: `tip`, `picture`, `size`, `hardness`, `angle`, `roundness`, `follow`, `spacing`,

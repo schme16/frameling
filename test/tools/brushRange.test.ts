@@ -15,6 +15,7 @@ import { MAX_HOLES, tipShapes } from '../../src/geometry/tipShapes';
 import { strokeOutline } from '../../src/core/render';
 import { defaultTip } from '../../src/geometry/tip';
 import { ctx, drag, pixelStore } from './helpers';
+import { setPencil } from '../helpers/pencil';
 
 describe('the brush slider range', () => {
   it('runs from 1 to the longer side of the canvas plus a tenth', () => {
@@ -138,11 +139,11 @@ describe('the pixel brush on a big canvas', () => {
     }
   });
   it('lets the size key go as far as the slider on this canvas, and no further', () => {
-    const sizes = { pixelBrushSize: 30, eraserPixelSize: 1, ditherSize: 1, spraySize: 1 };
-    expect(stepSize('brush', sizes, 1, 36)?.set.pixelBrushSize).toBe(33);
-    expect(stepSize('brush', { ...sizes, pixelBrushSize: 36 }, 1, 36)).toBeNull();
-    expect(stepSize('brush', { ...sizes, pixelBrushSize: 900 }, 1, 36)).toBeNull();
-    expect(stepSize('brush', { ...sizes, pixelBrushSize: 900 }, -1, 36)?.set.pixelBrushSize).toBeLessThanOrEqual(36);
+    const sizes = { pixelBrushSize: 1, dabSize: 30, eraserPixelSize: 1, ditherSize: 1, spraySize: 1 };
+    expect(stepSize('brush', sizes, 1, 36)?.set.dabSize).toBe(33);
+    expect(stepSize('brush', { ...sizes, dabSize: 36 }, 1, 36)).toBeNull();
+    expect(stepSize('brush', { ...sizes, dabSize: 900 }, 1, 36)).toBeNull();
+    expect(stepSize('brush', { ...sizes, dabSize: 900 }, -1, 36)?.set.dabSize).toBeLessThanOrEqual(36);
   });
 });
 
@@ -164,7 +165,7 @@ describe('a big pixel brush paints exactly what a plain stamp at every step woul
   for (const shape of ['square', 'round'] as const) {
     it(`${shape}, size 9, along a wobbly drag`, () => {
       pixelStore(1);
-      setToolSettings({ pixelBrushSize: 9, pixelBrushShape: shape });
+      setPencil({ size: 9, shape });
       const path: [number, number][] = [[10, 10], [22, 17], [30, 33], [18, 40], [50, 12]];
       drag(brushTool, ctx(), path);
       const got = alphas(grid());
@@ -186,7 +187,7 @@ describe('a big pixel brush paints exactly what a plain stamp at every step woul
   }
   it('a size bigger than the old cap paints and does not shrink under pen pressure', () => {
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 150 });
+    setPencil({ size: 150 });
     drag(brushTool, ctx(), [[10, 10], [20, 10]], { hasPressure: true, pressure: 1 });
     const d = grid();
     expect(alphas(d).filter((a) => a > 0).length).toBe(64 * 64);
@@ -196,7 +197,8 @@ describe('a big pixel brush paints exactly what a plain stamp at every step woul
 describe('a typed size far past the canvas', () => {
   it('paints the whole picture without working through every pixel it covers', () => {
     pixelStore(1);
-    setToolSettings({ ...DEFAULT_TOOL_SETTINGS, pixelPerfect: false, pixelBrushSize: 100000, pixelBrushShape: 'square' });
+    setToolSettings({ ...DEFAULT_TOOL_SETTINGS, pixelPerfect: false });
+    setPencil({ size: 100000, shape: 'square' });
     const t0 = performance.now();
     drag(brushTool, ctx(), [[10, 10], [30, 20], [50, 40]]);
     expect(performance.now() - t0).toBeLessThan(3000);

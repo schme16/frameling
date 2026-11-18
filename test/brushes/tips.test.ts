@@ -18,6 +18,8 @@ import { rectMask } from '../../src/select/mask';
 import { brushesToText, parseBrushesText, sameBrush, STARTERS } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
 import { startBrushPresets } from '../../src/brushes/presets';
+import { getDab, setWholeDab } from '../../src/dab/settings';
+import { setPencil } from '../helpers/pencil';
 import { clearPixelStamp, currentTip, makeBrushFromSelection, patchTip, pixelBrushStamp, setPixelStampKeep, setStampShape, setTipKind, stepTip } from '../../src/brushes/tips';
 import { toasts } from '../../src/ui/toast';
 import { addShapes, box, ctx, drag, pixelStore, shapesNow, vectorStore } from '../tools/helpers';
@@ -237,7 +239,8 @@ describe('a pixel brush from the selection', () => {
   /** A red and blue 2 x 2 flower at the top left, drawn on the layer and selected. */
   function flower(): void {
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 1, pixelPerfect: false });
+    setToolSettings({ pixelPerfect: false });
+    setPencil();
     store().setUi({ color: '#ff0000', tool: 'brush' });
     drag(brushTool, ctx(), [[4, 4], [4, 4]]);
     drag(brushTool, ctx(), [[5, 4], [5, 4]]);
@@ -304,11 +307,12 @@ describe('a pixel brush from the selection', () => {
     expect(getCommand('brush.pixelReset')!.enabled?.(store().get())).toBe(true);
     getCommand('brush.pixelReset')!.run();
     expect(pixelBrushStamp()).toBeNull();
-    expect(getToolSettings().pixelStamp).toBeNull();
+    expect(getDab().tip).toBe('square');
   });
-  it('a saved setting that is not a brush is ignored, not drawn', () => {
+  it('a saved picture that is not a brush is ignored, not drawn', () => {
     pixelStore(1);
-    setToolSettings({ pixelBrushSize: 1, pixelPerfect: false, pixelStamp: { w: 99, h: 1, colours: [], cells: [] } as never });
+    setToolSettings({ pixelPerfect: false });
+    setWholeDab({ ...getDab(), tip: 'picture', size: 99, picture: { w: 99, h: 1, colours: [], cells: [] } as never });
     expect(pixelBrushStamp()).toBeNull();
     store().setUi({ color: '#ff0000', tool: 'brush' });
     drag(brushTool, ctx(), [[10, 10], [10, 10]]);

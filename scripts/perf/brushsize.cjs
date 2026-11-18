@@ -365,7 +365,7 @@ async function main() {
         await sleep(300);
         const box = await canvasBox();
         // The tool settings live in the page's module state: set them through the settings the pixel bar uses.
-        await js(`window.__frameling.toolSettings.set({ pixelBrushSize: ${size}, pixelBrushShape: ${JSON.stringify(shape)}, pixelPerfect: false }); true`);
+        await js(`window.__frameling.toolSettings.set({ pixelBrushSize: ${size}, pixelBrushShape: ${JSON.stringify(shape)}, pixelPerfect: false }); window.__framelingDab?.reset(); window.__framelingDab?.set({ size: ${size}, tip: ${JSON.stringify(shape)} }); true`);
         process.stdout.write(`  pixel ${shape} ${size}... `);
         // Hover first: the footprint outline is drawn on every move even with no button down.
         await js('window.__framelingPerf.reset()');

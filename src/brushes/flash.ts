@@ -7,7 +7,7 @@ import { store } from '../core/store';
 import { getDry } from '../dry/settings';
 import type { PaperKind } from '../dry/paper';
 import { getDab } from '../dab/settings';
-import { isPixelBrushTool, subscribeSpecs } from '../dab/live';
+import { isPixelBrushTool, liveBrushTool, subscribeSpecs } from '../dab/live';
 import { mediumInfo } from '../dry/maths';
 import { pixelNameOf } from './pixelTipList';
 import { flashFor, type Flash, type Moment } from './parts';
@@ -57,7 +57,7 @@ export function showFlash(f: Flash): void {
 /** Starts noticing changes. Called once at launch (with the saved brushes). Returns what stops it. */
 export function startBrushFlash(): () => void {
   const state = () => store().get().ui;
-  const onPixel = () => isPixelBrushTool(state().tool);
+  const onPixel = () => isPixelBrushTool(liveBrushTool());
   // The paper a line is drawn on: the brush's own when it keeps one, else the sheet's.
   const effective = (): PaperKind => {
     if (onPixel()) return getDab().grain?.paper ?? getDry().paper;
@@ -77,17 +77,17 @@ export function startBrushFlash(): () => void {
   let prev = moment();
   let prevDab = getDab();
   let prevMedium = getDry().medium;
-  let prevTool = state().tool;
+  let prevTool = liveBrushTool();
   const look = () => {
     // Almost every call is nothing new (drawing, a slider drag and a list change all land here), so look cheaply first.
-    if (pickedBrushId() === prev.id && state().brush === prev.brush && state().tool === prevTool && getDab() === prevDab && getDry().medium === prevMedium && effective() === prev.paper) return;
+    if (pickedBrushId() === prev.id && state().brush === prev.brush && liveBrushTool() === prevTool && getDab() === prevDab && getDry().medium === prevMedium && effective() === prev.paper) return;
     const now = moment();
     // Moving to another tool is not a change of the brush (unless it picked another brush): start from here.
-    const f = state().tool === prevTool || pickedBrushId() !== prev.id ? flashFor(prev, now) : null;
+    const f = liveBrushTool() === prevTool || pickedBrushId() !== prev.id ? flashFor(prev, now) : null;
     prev = now;
     prevDab = getDab();
     prevMedium = getDry().medium;
-    prevTool = state().tool;
+    prevTool = liveBrushTool();
     if (f) showFlash(f);
   };
   const offs = [store().subscribe(look), subscribeBrushes(look), subscribeSpecs(look)];
