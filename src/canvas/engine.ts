@@ -370,6 +370,11 @@ export class CanvasEngine {
       this.idleHandle = 0;
       const { doc, ui } = store().get();
       if (ui.playing || this.gesture || performance.now() < this.zoomingUntil) return;
+      // Zoomed in far enough that the page is drawn from its shapes: have the overview ready for the next zoom step.
+      if (this.painter.wantsOverview()) {
+        this.painter.warmOverview();
+        return;
+      }
       const { dpr } = ctl.getViewport();
       const rect = stageDeviceRect({ zoom: ui.zoom, panX: ui.panX, panY: ui.panY }, doc.width, doc.height, dpr);
       const frames = neighbourFrames(ui.frame, doc.length, Math.min(2, this.painter.warmDepth(doc, rect)));
@@ -452,7 +457,12 @@ export class CanvasEngine {
       ghost: getViewSettings().emptyGhost && !bare && !ui.onion.enabled ? ghostItems(doc, ui.frame).filter((g) => !lt.some((l) => l.drawing === g.drawing)) : undefined,
       lightTable: lt.length ? { items: lt, alpha: ui.lightTable?.opacity ?? LIGHT_TABLE_OPACITY, tint: lightTableTint() } : undefined,
     });
-    if (!settled) {
+    if (this.painter.catchingUp) {
+      // The sharp zoomed in picture is being worked out a slice at a time: the next slice comes with the next frame.
+      clearTimeout(this.settleTimer);
+      this.zoomingUntil = 0;
+      this.invalidate(true, false);
+    } else if (!settled) {
       clearTimeout(this.settleTimer);
       this.settleTimer = window.setTimeout(() => {
         this.zoomingUntil = 0;

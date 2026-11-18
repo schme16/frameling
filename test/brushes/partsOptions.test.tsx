@@ -94,7 +94,9 @@ describe('the parts of this brush', () => {
     expect(currentFlash().parts).toEqual(['tip', 'stick']);
     const css = fs.readFileSync(path.join(__dirname, '../../src/brushes/parts.css'), 'utf8');
     expect(css).toMatch(/data-motion='reduce'\] \.bf-ring \{ animation: none/);
-    expect(css).toMatch(/data-motion='reduce'\] \.bf-wipe \{ display: none/);
+    // The line drawn on is the preview's own job, and it checks for reduced motion before it starts.
+    const preview = fs.readFileSync(path.join(__dirname, '../../src/tools/options/BrushOptions.tsx'), 'utf8');
+    expect(preview).toMatch(/if \(!fresh \|\| reducedMotion\(\)\) return paint\(n \+ 1\)/);
     expect(css).toMatch(/prefers-reduced-motion: reduce/);
     expect(css).not.toMatch(/\.bf-tag \{[^}]*animation/);
   });

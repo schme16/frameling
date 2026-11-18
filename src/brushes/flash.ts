@@ -16,6 +16,16 @@ import { everyBrush, pickedBrushId, subscribeBrushes } from './presets';
 /** How long the tag and the lit rows stay. */
 export const FLASH_MS = 2200;
 
+/** How long the preview takes to draw its line on after a change. */
+export const DRAW_ON_MS = 600;
+/** The preview's line is this many steps long. */
+export const PREVIEW_POINTS = 60;
+/** How many of the line's points are down, `ms` into the draw on: never fewer than two, slowing a little at the end. */
+export function drawnOn(ms: number, points: number): number {
+  const t = Math.min(1, Math.max(0, ms / DRAW_ON_MS));
+  return Math.max(2, Math.round((1 - (1 - t) ** 1.6) * points));
+}
+
 export interface Lit extends Flash {
   /** A new number for each flash, so a repeat of the same one starts over. */
   n: number;

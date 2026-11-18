@@ -10,6 +10,8 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
+import { DRAW_ON_MS, drawnOn, PREVIEW_POINTS, useFlash } from '../../brushes/flash';
+import { reducedMotion } from '../../ui/prefs';
 import { useDry } from '../../dry/settings';
 import { BrushPanel } from '../../brushes/BrushPanel';
 import { VectorParts, VectorPaper, VectorTipControls } from '../../brushes/TipOptions';
@@ -28,6 +30,8 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
   const theme = useThemeTick();
   // A line that catches on paper is drawn on the sheet's paper, so the picture is drawn again when the paper changes.
   const paper = useDry((s) => s.paper);
+  const drawOn = useFlash().n;
+  const seen = useRef(drawOn);
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -39,8 +43,8 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     const g = c.getContext('2d')!;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
-    const pts = [];
-    const n = 60;
+    const pts: { x: number; y: number; p: number }[] = [];
+    const n = PREVIEW_POINTS;
     for (let i = 0; i <= n; i++) {
       const t = i / n;
       // An S-shaped curve, with pressure swelling in the middle like a real pen stroke.
@@ -49,8 +53,25 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
     // Keep the preview inside its box however big the brush gets.
     const size = Math.min(brush.size, h * 0.8);
     // Your drawing colour when it shows up against the panel, otherwise the theme's own ink (near black on near black is no preview).
-    drawPreviewStroke(g, pts, { ...brush, size }, inkFor(c, color, 3));
-  }, [brush, color, theme, paper]);
+    const ink = inkFor(c, color, 3);
+    const paint = (count: number) => {
+      g.clearRect(0, 0, w, h);
+      drawPreviewStroke(g, count > n ? pts : pts.slice(0, count), { ...brush, size }, ink);
+    };
+    // A part of the brush just changed: the line is drawn on from its start, as a hand would, so the change is seen.
+    const fresh = drawOn !== seen.current;
+    seen.current = drawOn;
+    if (!fresh || reducedMotion()) return paint(n + 1);
+    const t0 = performance.now();
+    let raf = 0;
+    const step = () => {
+      const ms = performance.now() - t0;
+      paint(drawnOn(ms, n + 1));
+      if (ms < DRAW_ON_MS) raf = requestAnimationFrame(step);
+    };
+    step();
+    return () => cancelAnimationFrame(raf);
+  }, [brush, color, theme, paper, drawOn]);
   return <canvas className="cv-preview" data-control="preview" ref={ref} aria-label="Preview of the brush stroke" role="img" />;
 }
 

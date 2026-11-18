@@ -43,7 +43,6 @@ export function PreviewFlash({ children }: { children: ReactNode }) {
       {children}
       {flash.parts.length > 0 && (
         <>
-          <i key={`w${flash.n}`} className="bf-wipe" aria-hidden="true" />
           <span key={`t${flash.n}`} className="bf-tag" role="status">
             {flash.text}
           </span>

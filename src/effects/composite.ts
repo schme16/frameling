@@ -12,6 +12,7 @@ import { activeEffects, compositeOp, isPixelBlend } from './model';
 import { blendPixels, settleCanvasBytes } from './pixelBlend';
 import { blitPixelsGpu } from './pixelBlendGL';
 import type { PlanNode, PlanStep } from './plan';
+import { mayBuild } from '../core/slice';
 
 export interface CompositeHooks {
   /** Paints a layer's content at full opacity. `g` already has the document-to-canvas transform. */
@@ -311,6 +312,8 @@ export function paintThroughEffects(g: Ctx, fx: { kind: LayerEffect['kind']; v: 
   const full = key ? `${w}x${h}|${m.a},${m.b},${m.c},${m.d},${m.e},${m.f}|${stagePx.w}x${stagePx.h}|${g.imageSmoothingEnabled ? 1 : 0}|${sig}` : '';
   let pic = key ? shapeCache.get(key, full) : undefined;
   if (!pic) {
+    // Only a picture that would be kept waits for the next sliced redraw (src/core/slice.ts).
+    if (key && !mayBuild()) return;
     const pool = poolFor(w, h);
     depth++;
     try {
