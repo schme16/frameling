@@ -27,7 +27,6 @@ import { DEFAULT_TAPER } from '../../src/dab/maths';
 import { resetDry, setMedium } from '../../src/dry/settings';
 import { resetSoft } from '../../src/soft/settings';
 import { setPixelSettings, resetPixelSettings } from '../../src/pixel/settings';
-import { setToolSettings } from '../../src/tools/settings';
 import { TIDY_CHOICE } from '../../src/tools/quickshape';
 import { BRUSH_PAIRS, ONE_SIDED_BRUSHES, ONE_SIDED_CONTROLS } from './parityGaps';
 import { MEDIA } from '../../src/dry/maths';
@@ -117,8 +116,8 @@ const VECTOR: Look[] = [
 
 const ROUTES = (to: string, from: string) => ({ from, to, amount: 0.5, invert: false });
 const PIXEL: Look[] = [
-  { name: 'Brush (B) on a pixel layer', doc: pixelDoc, tool: 'brush', render: () => <BrushOptions />, setup: () => setToolSettings({ pixelBrushSize: 4 }) },
-  { name: 'Brush (B) on a pixel layer, with a picture brush', doc: pixelDoc, tool: 'brush', render: () => <BrushOptions />, setup: () => setToolSettings({ pixelStamp: TWO_COLOUR }) },
+  { name: 'Brush (B) on a pixel layer', doc: pixelDoc, tool: 'brush', picker: true, render: () => <BrushOptions />, setup: () => setDab({ size: 4 }) },
+  { name: 'Brush (B) on a pixel layer, with a picture brush', doc: pixelDoc, tool: 'brush', render: () => <BrushOptions />, setup: () => setDab({ tip: 'picture', picture: TWO_COLOUR, size: 2, spacing: 1 }) },
   { name: 'Pixel brush', doc: pixelDoc, tool: 'pixel-brush', picker: true, render: () => <DabOptionsPanel />, setup: () => setPixelSettings({ symmetry: 'h' }) },
   { name: 'Pixel brush, picture tip', doc: pixelDoc, tool: 'pixel-brush', render: () => <DabOptionsPanel />, setup: () => setDab({ tip: 'picture', picture: TWO_COLOUR }) },
   { name: 'Pixel brush, smooth edge on a locked palette', doc: () => pixelDoc(true), tool: 'pixel-brush', render: () => <DabOptionsPanel />, setup: () => setDab({ aliased: false }) },

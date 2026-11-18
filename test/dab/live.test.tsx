@@ -9,7 +9,7 @@ import { applySpec, currentSpec, isApplying, isPixelBrushTool, putSpec, subscrib
 import { DEFAULT_DAB } from '../../src/dab/maths';
 import { cleanSpec } from '../../src/dab/spec';
 import { getDab, resetDab, setDab } from '../../src/dab/settings';
-import { DEFAULT_TOOL_SETTINGS } from '../../src/tools/settings';
+import { DEFAULT_TOOL_SETTINGS, getToolSettings } from '../../src/tools/settings';
 import { PAPER_SAVED_CHOICE } from '../../src/dry/choices';
 import { _resetChoicesForTests, setChoice } from '../../src/core/choices';
 import '../../src/dab';
@@ -40,10 +40,20 @@ describe('reading the brush in use', () => {
 describe('putting a saved brush back', () => {
   it('writes a dab brush, picks its tool, and leaves the others as they were', () => {
     const was = getSoft();
+    store().setUi({ tool: 'select' });
     applySpec({ kind: 'dab', dab: { ...DEFAULT_DAB, size: 22, spacing: 1 } });
     expect(getDab()).toMatchObject({ size: 22, spacing: 1 });
     expect(store().get().ui.tool).toBe('pixel-brush');
     expect(getSoft()).toBe(was);
+  });
+
+  it('keeps the plain Brush on a pixel layer for a pixel brush, and still picks a soft tool or chalk', () => {
+    store().setUi({ tool: 'brush' });
+    applySpec({ kind: 'dab', dab: { ...DEFAULT_DAB, size: 5 } });
+    expect(getDab().size).toBe(5);
+    expect(store().get().ui.tool).toBe('brush');
+    applySpec({ kind: 'soft', tool: 'airbrush', size: 12, hardness: 0.5, flow: 0.5 });
+    expect(store().get().ui.tool).toBe('airbrush');
   });
 
   it('puts a soft tool\'s size, hardness and flow back on that tool and picks it', () => {
@@ -98,8 +108,16 @@ describe('putting a saved brush back', () => {
 
 describe('the pixel brush settings', () => {
   it('keep every number in range and fall back to round when a picture tip has no picture', () => {
-    setDab({ size: 5000, spacing: 0, tip: 'picture' });
+    setDab({ size: 5000, spacing: 0, tip: 'picture', hardness: 0.5 });
     expect(getDab()).toMatchObject({ size: 300, spacing: 0.01, tip: 'round' });
+  });
+
+  it('let a plain hard brush be as wide as a big canvas, as the plain Brush always could be', () => {
+    setDab({ size: 5000, spacing: 0.25, tip: 'square', hardness: 1 });
+    expect(getDab()).toMatchObject({ size: 5000, tip: 'square' });
+    // Soften it and it is held to the usual limit.
+    setDab({ hardness: 0.5 });
+    expect(getDab().size).toBe(300);
   });
 
   it('are remembered as the brush was left', () => {
@@ -108,9 +126,9 @@ describe('the pixel brush settings', () => {
     expect(cleanSpec({ kind: 'dab', dab: saved })).toMatchObject({ dab: { size: 11, aliased: false, scatter: 0.5 } });
   });
 
-  it('are untouched by the Brush tool\'s own pixel brush settings', () => {
-    expect(DEFAULT_TOOL_SETTINGS.pixelStamp).toBeNull();
+  it('are what the plain Brush on a pixel layer draws with, and leave the pencil and Shade sizes alone', () => {
     setDab({ size: 9 });
+    expect(getToolSettings().pixelBrushSize).toBe(DEFAULT_TOOL_SETTINGS.pixelBrushSize);
     expect(DEFAULT_TOOL_SETTINGS.pixelStamp).toBeNull();
   });
 });

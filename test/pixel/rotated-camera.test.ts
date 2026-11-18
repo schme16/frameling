@@ -18,6 +18,7 @@ import { DEFAULT_PIXEL_SETTINGS, setPixelSettings } from '../../src/pixel/settin
 import type { Tool } from '../../src/core/registry';
 import '../../src/pixel';
 import { ctx, drag, pixelStore } from '../tools/helpers';
+import { setPencil } from '../helpers/pencil';
 
 // 64 x 64 document at 8 per pixel: an 8 x 8 grid.
 const PS = 8;
@@ -31,6 +32,7 @@ const cells = (): string[] => {
 
 beforeEach(() => {
   setToolSettings({ ...DEFAULT_TOOL_SETTINGS, pixelBrushSize: 1, pixelBrushShape: 'square' });
+  setPencil();
   setPixelSettings({ ...DEFAULT_PIXEL_SETTINGS });
   setViewSettings({ perspective: false, snap: false, throughCamera: false, guides: false, grid: 'off' });
   forgetLastPixelEnd();

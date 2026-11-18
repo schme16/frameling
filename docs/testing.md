@@ -231,6 +231,14 @@ resets and Back to how it came on a pixel brush. `test/brushes/pixelParts.test.t
 `scripts/docs/ab-brush-parity/panel-timing.cjs` times the panel and each list opening on two renderers (`--renderer <dir>` for a before), and
 `panel-shots.cjs` with `sheets-panel.py` lay the panels side by side, before and after, in `brand/ab/brush-parity/panel/`.
 
+**The plain Brush on a pixel layer.** B on a pixel layer shows the Pixel brush's panel and draws with the Pixel brush's brush (`getDab()`). A plain hard brush
+(`isPencilDab`, `src/dab/pencil.ts`) is drawn by the pixel pencil's own code (`PixelStroke`), so its pixels are the ones it always made; any other brush goes through
+`src/dab/painter.ts`, the same code as the Pixel brush tool. `test/tools/pencilSame.test.ts` holds hashes of strokes taken from the Brush before it changed (size 1, 3,
+4 and 7, square and round, a picture in its own colours and as a shape, Pixel perfect on and off, a click, a Shift+click line, mirrored) and fails if one pixel moves.
+`test/dab/pencil.test.ts` covers which brushes count as plain and the one time move of the old size, shape and picture (`movePencil`, run again it does nothing).
+`test/brushes/brushOnPixels.test.tsx` mounts the panel. `scripts/docs/ab-brush-parity/b-pixels.cjs` shoots the panel and five strokes at 800% and times a stroke, on an old
+and a new build (`bp-panel`, `bp-strokes`, `bp-time`; copy the file into the old checkout, run with `--only` and `--out`).
+
 **Shrinking the list.** Each entry in `parityGaps.ts` has a line in plain words saying which piece of the plan clears it
 (`piece 9`, or `by design` for what stays one sided because vectors have shapes and pixels have pixels). When you close a gap the
 test fails until you take the entry out. For a control, give the other side's panel the same `control` id and delete the entry. For

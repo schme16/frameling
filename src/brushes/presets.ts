@@ -8,9 +8,12 @@ import { registerCommand, unregisterCommand } from '../core/registry';
 import { store } from '../core/store';
 import { download, pickUpload } from '../platform';
 import { pickTool } from '../tools/pick';
-import { applySpec, currentSpec, isApplying, isPixelBrushTool, subscribeSpecs } from '../dab/live';
+import { applySpec, currentSpec, isApplying, isPixelBrushTool, liveBrushTool, subscribeSpecs } from '../dab/live';
 import { toast } from '../ui/toast';
 import type { DabBrush } from '../dab/maths';
+import { movePencil, OLD_BRUSH_DEFAULT, type PencilMoved } from '../dab/pencil';
+import { hadSavedDab, setWholeDab } from '../dab/settings';
+import { getToolSettings } from '../tools/settings';
 import { IMPORT_EXTS } from './import';
 import { cleanGroup } from './library';
 import { sameSpec as sameSpecFor, specTool } from '../dab/spec';
@@ -143,7 +146,7 @@ export const currentBrushState = (): PresetState => presetState(store().get().ui
 /** The two sides of the library: the vector Brush's brushes, and the pixel brush tools'. The tool you are on says which one the row, the picker and the commands mean. */
 export type Side = 'vector' | 'pixel';
 export const sideOfTool = (tool: string): Side => (isPixelBrushTool(tool) ? 'pixel' : 'vector');
-export const currentSide = (): Side => sideOfTool(store().get().ui.tool);
+export const currentSide = (): Side => sideOfTool(liveBrushTool());
 export const currentPixelState = (): PresetState => pixelPresetState(currentSpec(), mine, pickedId);
 /** Which brush is lit on a side, and whether it has been changed. */
 export const stateFor = (side: Side): PresetState => (side === 'pixel' ? currentPixelState() : currentBrushState());
@@ -276,6 +279,39 @@ export function followTarget(edits: BrushEdits, own: BrushPreset | undefined, br
 }
 
 /** Starts saving changes into the picked brush when "Changing a saved brush" says so. Called once, at launch. */
+/** The name the Brush's old size, shape and picture are saved under, in Pixel basics. */
+export const MY_PENCIL = 'My pixel pencil';
+const MOVED_KEY = 'frameling.pixelPencilMoved.v1';
+
+/**
+ * The one time move of the plain Brush's own size, shape and picture into the shared pixel brush (see dab/pencil.ts).
+ * The old settings stay in the tool settings, since Pencil, Shade, Dither and Spray still use them; this only reads them.
+ */
+export function movePencilOnce(): PencilMoved | null {
+  let done = false;
+  try {
+    done = typeof localStorage !== 'undefined' && localStorage.getItem(MOVED_KEY) === '1';
+  } catch {
+    // unreadable: counts as not done, and the move is harmless to repeat
+  }
+  const t = getToolSettings();
+  const r = movePencil({ done, old: { size: t.pixelBrushSize ?? OLD_BRUSH_DEFAULT.size, shape: t.pixelBrushShape ?? OLD_BRUSH_DEFAULT.shape, stamp: t.pixelStamp }, hadBrush: hadSavedDab() });
+  if (done) return null;
+  if (r.use) setWholeDab(r.use);
+  if (r.keep) {
+    const saved = savePixelPreset(mine, MY_PENCIL, { kind: 'dab', dab: r.keep }, uid('b'), 'Pixel basics');
+    if (saved) setMine(saved.list);
+  }
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(MOVED_KEY, '1');
+  } catch {
+    // not remembered this time
+  }
+  // A person with a Pixel brush of their own keeps it, so say where the Brush's old settings went.
+  if (r.keep && !r.use) toast(`The Brush on a pixel layer now uses the pixel brush list. Your old size and shape are saved as "${MY_PENCIL}".`, { duration: 9000 });
+  return r;
+}
+
 export function startBrushPresets(): () => void {
   syncPickCommands();
   const s = store();
@@ -290,7 +326,7 @@ export function startBrushPresets(): () => void {
     else emit();
   });
   // The pixel brush tools: the same, when any of their settings change or you move between them.
-  let lastTool = s.get().ui.tool;
+  let lastTool = liveBrushTool();
   const onPixel = () => {
     if (isApplying()) return;
     const own = mine.find((p) => p.id === pickedId && p.tool === 'pixel');
@@ -301,7 +337,7 @@ export function startBrushPresets(): () => void {
   };
   const offSpecs = subscribeSpecs(onPixel);
   const offTool = s.subscribe(() => {
-    const t = s.get().ui.tool;
+    const t = liveBrushTool();
     if (t === lastTool) return;
     lastTool = t;
     if (isPixelBrushTool(t)) emit();

@@ -1,10 +1,6 @@
-// The pixel brush made from a selection, in the brush options on a pixel layer: what it looks like, which colours it
-// paints with, and a way back to the square or round brush.
+// A picture tip drawn big enough to see, for the Pixel brush's options.
 import { useEffect, useRef } from 'react';
-import { ActionButton, Toggle } from '../canvas/controls';
-import { useToolSettings } from '../tools/settings';
-import { hasColours, readPixelStamp, stampCells, type PixelStamp } from './stamps';
-import { clearPixelStamp, makeBrushFromSelection, setPixelStampKeep } from './tips';
+import { stampCells, type PixelStamp } from './stamps';
 import './brushes.css';
 
 /** The brush drawn big enough to see, in its own colours (or in the colour picked when it paints in that). */
@@ -27,29 +23,4 @@ export function StampPicture({ stamp, color }: { stamp: PixelStamp; color: strin
     }
   }, [stamp, color]);
   return <canvas ref={ref} aria-label={`Your brush, ${stamp.w} by ${stamp.h} pixels`} role="img" />;
-}
-
-export function PixelStampOptions() {
-  const stamp = readPixelStamp(useToolSettings((s) => s.pixelStamp));
-  return (
-    <div className="tp-row" data-testid="pixel-stamp">
-      {stamp && (
-        <>
-          <div className="tp-pixel">
-            <StampPicture stamp={stamp} color="currentColor" />
-            <span>
-              Your brush, {stamp.w} by {stamp.h}
-            </span>
-          </div>
-          {hasColours(stamp) && <Toggle control="picture-own-colours" label="Its own colours" checked={stamp.keep} onChange={setPixelStampKeep} hint="On: it stamps the picture as it was. Off: only its shape counts, painted in the colour you picked." />}
-          <ActionButton control="stamp-reset" command="brush.pixelReset" onClick={clearPixelStamp} title="Go back to the square or round brush">
-            Back to the usual brush
-          </ActionButton>
-        </>
-      )}
-      <ActionButton control="tip-from-selection" command="brush.fromSelection" onClick={() => void makeBrushFromSelection()} title="Turn the pixels you have selected into a brush (up to 32 by 32)">
-        Brush from selection
-      </ActionButton>
-    </div>
-  );
 }

@@ -9,12 +9,14 @@ import { DEFAULT_TOOL_SETTINGS, setToolSettings } from '../../src/tools/settings
 import { forgetLastPixelEnd } from '../../src/tools/pixelStroke';
 import { getPx } from '../../src/canvas/pixels';
 import { setChoice } from '../../src/core/choices';
+import { setPencil } from '../helpers/pencil';
 import { addShapes, ctx, drag, pixelStore, ptr, shapesNow, vectorStore } from './helpers';
 
 const wave: [number, number][] = [[10, 10], [30, 18], [60, 40], [90, 38], [120, 20]];
 
 beforeEach(() => {
   setToolSettings({ ...DEFAULT_TOOL_SETTINGS });
+  setPencil();
   forgetLastPixelEnd();
 });
 
@@ -186,7 +188,7 @@ describe('brush on a pixel layer', () => {
   it('paints a bigger footprint at bigger sizes', () => {
     const s = pixelStore();
     s.setUi({ color: '#ffffff' });
-    setToolSettings({ pixelBrushSize: 3 });
+    setPencil({ size: 3 });
     drag(brushTool, ctx(), [at(3, 3), at(3, 3)]);
     const d = pixelsNow()!;
     let n = 0;

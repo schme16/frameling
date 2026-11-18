@@ -3,11 +3,10 @@ import { PenOptions } from '../../tablet/PenOptions';
 import { findLayer } from '../../core/doc';
 import type { BrushSettings } from '../../core/format';
 import { store, useStore } from '../../core/store';
-import { Choice, MoreOptions, Slider, Tip, Toggle } from '../../canvas/controls';
+import { MoreOptions, Slider, Toggle } from '../../canvas/controls';
 import { drawPreviewStroke } from '../../brushes/thumbs';
 import { inkFor, useThemeTick } from '../../brushes/ink';
 import { DrawModeToggle } from './DrawModeToggle';
-import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
 import { DRAW_ON_MS, drawnOn, PREVIEW_POINTS, useFlash } from '../../brushes/flash';
@@ -15,8 +14,7 @@ import { reducedMotion } from '../../ui/prefs';
 import { useDry } from '../../dry/settings';
 import { BrushPanel } from '../../brushes/BrushPanel';
 import { VectorParts, VectorPaper, VectorTipControls } from '../../brushes/TipOptions';
-import { PixelStampOptions } from '../../brushes/PixelStampOptions';
-import { readPixelStamp } from '../../brushes/stamps';
+import { BrushOnPixelsPanel } from '../../dab/Options';
 import { typedSize } from '../brushRange';
 import { useBrushRange } from './useBrushRange';
 
@@ -77,7 +75,7 @@ export function BrushPreview({ brush, color }: { brush: BrushSettings; color: st
 
 export function BrushOptions() {
   const kind = useActiveLayerKind();
-  return kind === 'pixel' ? <PixelBrushOptions /> : <VectorBrushOptions />;
+  return kind === 'pixel' ? <BrushOnPixelsPanel /> : <VectorBrushOptions />;
 }
 
 function setBrush(patch: Partial<BrushSettings>): void {
@@ -113,33 +111,3 @@ function VectorBrushOptions() {
     />
   );
 }
-
-function PixelBrushOptions() {
-  const size = useToolSettings((s) => s.pixelBrushSize);
-  const shape = useToolSettings((s) => s.pixelBrushShape);
-  const perfect = useToolSettings((s) => s.pixelPerfect);
-  const stamp = readPixelStamp(useToolSettings((s) => s.pixelStamp));
-  const range = useBrushRange(true);
-  return (
-    <div className="cv-options">
-      {!stamp && <Slider control="size" label="Size" value={size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'}`} onChange={(v) => setToolSettings({ pixelBrushSize: typedSize(v, true) })} />}
-      {!stamp && size > 2 && (
-        <Choice
-          control="plain-shape"
-          label="Shape"
-          value={shape}
-          options={[
-            { value: 'square', label: 'Square' },
-            { value: 'round', label: 'Round' },
-          ]}
-          onChange={(v) => setToolSettings({ pixelBrushShape: v })}
-        />
-      )}
-      {!stamp && <Toggle control="pixel-perfect" label="Pixel perfect" checked={perfect} onChange={(v) => setToolSettings({ pixelPerfect: v })} hint="Keeps hand-drawn lines one pixel thick by tidying the corners. Works with size 1." />}
-      <PixelStampOptions />
-      <Tip>Hold Shift and click to draw a straight line from where you last stopped.</Tip>
-      <PenOptions tool="brush" size />
-    </div>
-  );
-}
-

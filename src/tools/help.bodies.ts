@@ -8,9 +8,11 @@ In the options you can change the size, how much it smooths out wobbles, whether
 
 **How big can it go?** The **Size** slider runs from 1 pixel to a little wider than your canvas, so a big canvas gets a big brush and a small one is not left with a slider that is all too wide. The first part of the slider is for small, careful sizes and the last part is for the huge ones. Want it bigger still? Click the number beside the slider and type any size you like. The pencil's **Thickness** and the pen's **Line thickness** work the same way.
 
-**On a pixel layer** it paints hard-edged pixels, with the size counted in art pixels (the slider runs up to a little wider than your pixel canvas, and you can click the number and type a bigger one). Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1). (For one pixel lines, the [Pencil](help:tool-pencil) is quicker.)
+**On a pixel layer** it paints pixels, with the size counted in art pixels, and the options are the [Pixel brush](help:pixel-brush)'s: the same preview, the same list of brushes and the same **Tip**, **Size**, **Spacing** and folds. The brush it starts on is the **Pixel pencil**, one hard pixel. The slider runs up to a little wider than your pixel canvas, and you can click the number and type a bigger one. Looking through a zoomed [camera](help:camera), the size is what you see: a 4 pixel brush paints 2 pixels through a camera zoomed in 2x (whole pixels, rounded, never less than 1).
 - **Pixel perfect** tidies the little L-shaped corners that make hand-drawn lines look lumpy, so they stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
+- A plain hard brush (a square or round tip, hard edge, no scatter) is drawn the way the pencil draws, in whole pixels, so **Pixel perfect** and **Shift** lines work. Any other brush in the list is laid as dabs, just as the Pixel brush lays them.
+- Your old **Brush** size, shape and picture are kept: they became the brush in hand, and a saved brush called **My pixel pencil** if you had changed them.
 
 **Eraser end of your pen?** Flip the pen over and Frameling switches to the eraser for as long as you use it.
 
@@ -21,7 +23,7 @@ If the brush won't draw, the layer might be locked or hidden. Check it in the ti
 
 **Clean line.** Set **Line** to **Clean line** in the options and the pencil smooths what you draw into a few even curves (a centre-line stroke). You can then reshape it point by point with [Edit points](help:tool-points) (**A**). Good for tidy outlines and inking.
 
-**On a pixel layer** it's the pixel pencil, the main tool for pixel art. It has a **size**: size 1 is the plain pencil, and bigger sizes are the same tool with a thicker tip (the Brush on a pixel layer is the same pen).
+**On a pixel layer** it's the pixel pencil, the main tool for pixel art. It has a **size**: size 1 is the plain pencil, and bigger sizes are the same tool with a thicker tip (the [Brush](help:tool-brush) on a pixel layer draws a plain hard brush the same way, but keeps its own size).
 - **Pixel perfect** (on unless you turn it off in the options) tidies the little L-shaped corners hand-drawn lines get, so curves stay one pixel thick.
 - Hold **Shift** and click to draw a straight line from where you last stopped.
 - It paints with the **stroke** colour, called **Paint** in the Pixel workspace (see [Paint and Back](help:pixel-wells)). Pick colours from the [Palette](help:palette).

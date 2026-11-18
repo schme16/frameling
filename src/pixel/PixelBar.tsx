@@ -9,6 +9,7 @@ import { useViewSettings } from '../canvas/viewSettings';
 import { WAYS } from '../select/ways';
 import { useFeaturesVersion } from '../features/use';
 import { useTileUi } from '../tiles/state';
+import { setDab, useDab } from '../dab/settings';
 import { setToolSettings, useToolSettings } from '../tools/settings';
 import { activeColor } from '../tools/wells';
 import { dock, inPixelWorkspace, showPanel } from '../ui/dock';
@@ -40,13 +41,15 @@ const Sep = () => <span className="px-bar-sep" aria-hidden="true" />;
 function SizeButtons({ tool }: { tool: string }) {
   const which = sizeSettingFor(tool);
   const brush = useToolSettings((s) => s.pixelBrushSize);
+  const dab = useDab((b) => b.size);
   const eraser = useToolSettings((s) => s.eraserPixelSize);
   const dither = usePixelSettings((s) => s.ditherSize);
   const spray = usePixelSettings((s) => s.spraySize);
   if (!which) return null;
-  const value = which === 'pixelBrushSize' ? brush : which === 'eraserPixelSize' ? eraser : which === 'spraySize' ? spray : dither;
+  const value = which === 'pixelBrushSize' ? brush : which === 'dabSize' ? dab : which === 'eraserPixelSize' ? eraser : which === 'spraySize' ? spray : dither;
   const pick = (n: number) => {
     if (which === 'ditherSize' || which === 'spraySize') setPixelSettings({ [which]: n });
+    else if (which === 'dabSize') setDab({ size: n });
     else setToolSettings({ [which]: n });
   };
   return (
@@ -62,14 +65,21 @@ function SizeButtons({ tool }: { tool: string }) {
   );
 }
 
-function ShapeButtons() {
-  const shape = useToolSettings((s) => s.pixelBrushShape);
+function ShapeButtons({ tool }: { tool: string }) {
+  // The plain Brush takes its shape from the tip of the pixel brush it draws with; the others keep theirs in the tool settings.
+  const own = tool === 'brush';
+  const kept = useToolSettings((s) => s.pixelBrushShape);
+  const tip = useDab((b) => b.tip);
+  const shape = own ? (tip === 'square' ? 'square' : 'round') : kept;
+  const set = (v: 'square' | 'round') => (own ? setDab({ tip: v }) : setToolSettings({ pixelBrushShape: v }));
+  // A picture brush has no square or round to pick.
+  if (own && tip === 'picture') return null;
   return (
     <div className="px-bar-group" role="radiogroup" aria-label="Brush shape">
-      <Btn on={shape === 'square'} title="Square brush" onClick={() => setToolSettings({ pixelBrushShape: 'square' })}>
+      <Btn on={shape === 'square'} title="Square brush" onClick={() => set('square')}>
         <span className="px-bar-shape is-square" aria-hidden="true" />
       </Btn>
-      <Btn on={shape === 'round'} title="Round brush (shows from size 3)" onClick={() => setToolSettings({ pixelBrushShape: 'round' })}>
+      <Btn on={shape === 'round'} title="Round brush (shows from size 3)" onClick={() => set('round')}>
         <span className="px-bar-shape is-round" aria-hidden="true" />
       </Btn>
     </div>
@@ -179,7 +189,7 @@ export function PixelBar() {
     <div className="px-bar" role="toolbar" aria-label="Pixel art options" data-help="pixel-bar">
       {pixelDoc && <WayChip />}
       <SizeButtons tool={tool} />
-      {hasShape(tool) && <ShapeButtons />}
+      {hasShape(tool) && <ShapeButtons tool={tool} />}
       {hasPerfect(tool) && (
         <Btn on={perfect} wide title="Pixel perfect: tidies corners so hand-drawn lines stay one pixel thick" label="Pixel perfect" onClick={() => setToolSettings({ pixelPerfect: !perfect })}>
           Pixel perfect

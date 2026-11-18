@@ -2,6 +2,7 @@
 // and charcoal you are on, with its settings. Reading it gives a PixelSpec; using a saved one puts the settings back and
 // picks the tool.
 import { withChoice } from '../core/choices';
+import { findLayer } from '../core/doc';
 import { store } from '../core/store';
 import { PAPER_SAVED_CHOICE } from '../dry/choices';
 import type { PaperKind } from '../dry/paper';
@@ -18,8 +19,22 @@ export const DRY_TOOL_ID = 'charcoal';
 /** The tools whose settings the pixel side of the library keeps. */
 export const isPixelBrushTool = (tool: string): boolean => tool === PIXEL_BRUSH_TOOL || tool === DRY_TOOL_ID || (SOFT_KINDS as string[]).includes(tool);
 
+/**
+ * The tool whose brush is in hand. The plain Brush (B) on a pixel layer draws with the Pixel brush's brush (the one
+ * shared panel and list), so for its settings it counts as the Pixel brush; everywhere else the tool is itself.
+ */
+export function brushToolOf(tool: string, layerKind: string | undefined): string {
+  return tool === 'brush' && layerKind === 'pixel' ? PIXEL_BRUSH_TOOL : tool;
+}
+
+/** `brushToolOf` for the tool and layer you are on now. */
+export function liveBrushTool(): string {
+  const { ui, doc } = store().get();
+  return brushToolOf(ui.tool, (findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1])?.kind);
+}
+
 /** The pixel brush in use, or null when the tool you are on is not one of them. */
-export function currentSpec(tool: string = store().get().ui.tool): PixelSpec | null {
+export function currentSpec(tool: string = liveBrushTool()): PixelSpec | null {
   if (tool === PIXEL_BRUSH_TOOL) return { kind: 'dab', dab: getDab() };
   if (tool === DRY_TOOL_ID) {
     const d = getDry();
@@ -55,7 +70,8 @@ export const isApplying = (): boolean => applying;
 /** Uses a saved pixel brush: its settings go back where they live, and its tool is picked. */
 export function applySpec(spec: PixelSpec, pick = true): void {
   whileApplying(() => putSpec(spec));
-  if (pick) pickTool(specTool(spec));
+  // The plain Brush on a pixel layer keeps its tool for a pixel brush: it draws with it. The soft and dry ones are tools of their own.
+  if (pick && !(spec.kind === 'dab' && liveBrushTool() === PIXEL_BRUSH_TOOL)) pickTool(specTool(spec));
   if (spec.kind === 'dry') usePaperOf(spec.paper);
 }
 

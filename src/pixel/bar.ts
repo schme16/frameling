@@ -7,9 +7,10 @@ import { exactIndex, nearestIndex, paletteRgb } from './palette';
 /** The sizes the bar offers, in art pixels. */
 export const BAR_SIZES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
-/** Which setting holds a tool's size on a pixel layer, or null for tools without one. The Pencil has a size (1 is the pencil). */
-export function sizeSettingFor(tool: string): 'pixelBrushSize' | 'eraserPixelSize' | 'ditherSize' | 'spraySize' | null {
-  if (tool === 'pencil' || tool === 'brush' || tool === 'shade') return 'pixelBrushSize';
+/** Which setting holds a tool's size on a pixel layer, or null for tools without one. The Pencil has a size (1 is the pencil). `dabSize` is the size of the pixel brush the plain Brush draws with. */
+export function sizeSettingFor(tool: string): 'pixelBrushSize' | 'dabSize' | 'eraserPixelSize' | 'ditherSize' | 'spraySize' | null {
+  if (tool === 'brush') return 'dabSize';
+  if (tool === 'pencil' || tool === 'shade') return 'pixelBrushSize';
   if (tool === 'eraser') return 'eraserPixelSize';
   if (tool === 'dither') return 'ditherSize';
   if (tool === 'spray') return 'spraySize';

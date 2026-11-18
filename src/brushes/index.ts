@@ -26,7 +26,7 @@ import {
 import { flipRowStyle, requestPicker } from './picker';
 import { backToHowItCame, partsNow, resetPaper, resetStick, resetTip, savedForSide } from './partsActions';
 
-export { startBrushPresets } from './presets';
+export { movePencilOnce, startBrushPresets } from './presets';
 
 /** Brings the brush options up, with the brush tool, so a name box has somewhere to show. On a pixel brush tool the options are already its own. */
 function showBrushOptions(): void {

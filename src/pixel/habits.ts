@@ -10,6 +10,7 @@ import { ART_ZOOM_PRESETS, zoomForArtPercent } from './units';
 import { zoomTo } from '../canvas/controller';
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
+import { getDab, setDab } from '../dab/settings';
 import { getToolSettings, setToolSettings } from '../tools/settings';
 import { pickTool } from '../tools/pick';
 import { noteColorUsed } from '../tools/recent';
@@ -21,6 +22,8 @@ export const MAX_DITHER = 32;
 
 export interface Sizes {
   pixelBrushSize: number;
+  /** The size of the pixel brush the plain Brush draws with. */
+  dabSize?: number;
   eraserPixelSize: number;
   ditherSize: number;
   spraySize: number;
@@ -49,9 +52,9 @@ export function stepSize(tool: string, sizes: Sizes, dir: 1 | -1, reach = MAX_BR
   const which = sizeSettingFor(tool);
   if (!which) return null;
   const key = which as keyof Sizes;
-  const max = key === 'ditherSize' || key === 'spraySize' ? MAX_DITHER : key === 'pixelBrushSize' ? reach : MAX_BRUSH;
-  const now = sizes[key];
-  const by = key === 'pixelBrushSize' ? brushStep(now, dir) : 1;
+  const max = key === 'ditherSize' || key === 'spraySize' ? MAX_DITHER : key === 'pixelBrushSize' || key === 'dabSize' ? reach : MAX_BRUSH;
+  const now = sizes[key] ?? 1;
+  const by = key === 'pixelBrushSize' || key === 'dabSize' ? brushStep(now, dir) : 1;
   const next = now > max && dir > 0 ? now : Math.min(max, Math.max(1, now + dir * by));
   return next === now ? null : { set: { [key]: next } };
 }
@@ -67,8 +70,9 @@ export function stepPaletteColor(colors: readonly string[], index: number | null
 function resize(dir: 1 | -1): void {
   const step = stepSizeNow(dir);
   if (!step) return;
-  const { ditherSize, spraySize, ...toolSizes } = step.set;
+  const { ditherSize, spraySize, dabSize, ...toolSizes } = step.set;
   if (Object.keys(toolSizes).length) setToolSettings(toolSizes);
+  if (dabSize !== undefined) setDab({ size: dabSize });
   if (ditherSize !== undefined) setPixelSettings({ ditherSize });
   if (spraySize !== undefined) setPixelSettings({ spraySize });
   if (step.tool) pickTool(step.tool);
@@ -78,7 +82,7 @@ function stepSizeNow(dir: 1 | -1): SizeStep | null {
   const t = getToolSettings();
   const { doc } = store().get();
   const layer = activePixelLayer();
-  return stepSize(store().get().ui.tool, { pixelBrushSize: t.pixelBrushSize, eraserPixelSize: t.eraserPixelSize, ditherSize: getPixelSettings().ditherSize, spraySize: getPixelSettings().spraySize }, dir, brushRange(doc.width, doc.height, layer?.pixelSize).max);
+  return stepSize(store().get().ui.tool, { pixelBrushSize: t.pixelBrushSize, dabSize: getDab().size, eraserPixelSize: t.eraserPixelSize, ditherSize: getPixelSettings().ditherSize, spraySize: getPixelSettings().spraySize }, dir, brushRange(doc.width, doc.height, layer?.pixelSize).max);
 }
 
 const canResize = (dir: 1 | -1) => () => !!activePixelLayer() && !!stepSizeNow(dir);
