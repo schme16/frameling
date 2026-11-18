@@ -348,7 +348,7 @@ when comparing two drawings for "same look" (as `id` is ignored).
   BrushSettings` (`size, thinning, smoothing, streamline, taperStart, taperEnd, capStart, capEnd`, and `tip?`), `color`,
   `opacity`. Kept as input points so it re-renders losslessly. **Brush tips** (`brush.tip`, all optional, missing = a plain
   line, so older files read unchanged): `kind` is `'chalk' | 'charcoal' | 'watercolour' | 'stamp'`, and the rest depend on it:
-  `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; on a dry medium `streak` 0 to 1 overrides how much the stick's bumps streak along the line; watercolour: `amount` is the edge
+  `amount` and `grain` (chalk and charcoal: how much grain, 0 to 1, and how coarse, 0.5 to 3; on a dry medium `streak` 0 to 1 overrides how much the stick's bumps streak along the line, and `paper` (`smooth`, `fine`, `medium`, `laid` or `rough`, optional) is a paper this brush keeps for itself: the line then carries that paper in its Paper tooth effect, and without it the sheet's paper as it is when the line is drawn; read only on a tip with a `dry` medium; watercolour: `amount` is the edge
   strength), and for a stamp `shape` (`dot | leaf | star | diamond | dash | heart | paw | custom`), `spacing` (a share of the
   brush size), `jitter`, `angle` (`follow | upright | random`), `scatter`, `custom` (a made-from-a-selection stamp as closed
   outlines, flat `[x, y, ...]` lists centred on 0 and 1 unit across, at most 90 points in all) and `seed` (set when the line is

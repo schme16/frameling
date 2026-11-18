@@ -5,7 +5,8 @@ import { findLayer } from '../core/doc';
 import { setChoice, useChoice } from '../core/choices';
 import { useStore } from '../core/store';
 import { ActionButton, Slider, Tip, Toggle } from '../canvas/controls';
-import { BrushPresetRow } from '../brushes/BrushPresetRow';
+import { BrushPanel } from '../brushes/BrushPanel';
+import { PixelPreview } from '../brushes/PixelSample';
 import { MirrorOptions } from '../tools/options/MirrorOptions';
 import { useToolSettings } from '../tools/settings';
 import { PenOptions } from '../tablet/PenOptions';
@@ -70,18 +71,28 @@ function Options({ kind }: { kind: SoftKind }) {
   const o = useSoft((s) => s.tools[kind]);
   const hold = useSoft((s) => s.holdBuilds);
   const words = FLOW_WORDS[kind];
+  const hardness = kind !== 'smudge' ? <Slider control="hardness" label="Hardness" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setSoftTool(kind, { hardness: v / 100 })} hint="How much of the brush is solid before it starts to fade. Low is soft and airy, high is firm with a thin fade." /> : null;
   return (
-    <div className="cv-options">
-      <BrushPresetRow side="pixel" />
-      <Slider control="size" label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setSoftTool(kind, { size: v })} />
-      {kind !== 'smudge' && <Slider control="hardness" label="Hardness" value={Math.round(o.hardness * 100)} min={0} max={100} format={(v) => (v === 0 ? 'Soft all through' : v === 100 ? 'Hard edge' : `${v}%`)} onChange={(v) => setSoftTool(kind, { hardness: v / 100 })} hint="How much of the brush is solid before it starts to fade. Low is soft and airy, high is firm with a thin fade." />}
-      <Slider control="flow" label={words.label} value={Math.round(o.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={(v) => `${v}%`} onChange={(v) => setSoftTool(kind, { flow: v / 100 })} hint={words.hint} />
-      {kind === 'airbrush' && <Toggle control="builds-up" label="Builds up while you hold still" checked={hold} onChange={setHoldBuilds} hint="Keep the pen or mouse down in one place and the colour gets denser, like a real airbrush." />}
-      {kind !== 'smudge' && <MirrorOptions />}
-      <Edge kind={kind} />
-      <Tip>{TIPS[kind]}</Tip>
-      <PenOptions tool={kind} size flow />
-    </div>
+    <BrushPanel
+      side="pixel"
+      preview={<PixelPreview spec={{ kind: 'soft', tool: kind, size: o.size, hardness: o.hardness, flow: o.flow }} />}
+      size={<Slider control="size" label="Size" value={o.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} curve format={(v) => `${v} pixel${v === 1 ? '' : 's'} across`} onChange={(v) => setSoftTool(kind, { size: v })} />}
+      afterSize={
+        <>
+          {hardness}
+          <Slider control="flow" label={words.label} value={Math.round(o.flow * 100)} min={Math.round(FLOW_RANGE.min * 100)} max={100} format={(v) => `${v}%`} onChange={(v) => setSoftTool(kind, { flow: v / 100 })} hint={words.hint} />
+          {kind === 'airbrush' && <Toggle control="builds-up" label="Builds up while you hold still" checked={hold} onChange={setHoldBuilds} hint="Keep the pen or mouse down in one place and the colour gets denser, like a real airbrush." />}
+          <Edge kind={kind} />
+        </>
+      }
+      more={
+        <>
+          {kind !== 'smudge' && <MirrorOptions />}
+          <Tip>{TIPS[kind]}</Tip>
+          <PenOptions tool={kind} size flow />
+        </>
+      }
+    />
   );
 }
 

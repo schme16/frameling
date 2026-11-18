@@ -48,6 +48,7 @@ import {
 import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets } from './presets';
 import { customOf, fixedActiveId, fixedHint, fixedRows, FIXED_WORDS, isFixedSide, parseTipId, type PickerSide } from './tipList';
 import { pickStick, pickTip } from './tips';
+import { usePixelLive } from './usePixelLive';
 import { currentSpec, putSpec } from '../dab/live';
 import { SIZE_RANGE as DAB_SIZE } from '../dab/maths';
 import { specSize, withSize, type PixelSpec } from '../dab/spec';
@@ -190,9 +191,11 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const tips = isFixedSide(side);
   const words = side === 'stick' ? FIXED_WORDS.stick : FIXED_WORDS.tip;
   const custom = customOf(live.tip);
-  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom) : []), [tips, side, live, custom]);
+  const pixelLive = usePixelLive();
+  const pixel = tips ? pixelLive : null;
+  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom, pixel) : []), [tips, side, live, custom, pixel]);
   const all = tips ? tipList : brushesOnSide(side);
-  const { activeId } = tips ? { activeId: fixedActiveId(side, live) } : stateFor(side);
+  const { activeId } = tips ? { activeId: fixedActiveId(side, live, pixel) } : stateFor(side);
   const liveSpec = side === 'pixel' ? currentSpec() : null;
   const big = all.length > SMALL_LIBRARY;
   // The tips have no favourites or recent: it is a short list, shown with every group open at once.

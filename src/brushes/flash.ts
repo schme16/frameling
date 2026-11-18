@@ -4,7 +4,12 @@
 // paper is a different object from last time, and only the preview and the rows listen for the flash.
 import { useSyncExternalStore } from 'react';
 import { store } from '../core/store';
-import { getDry, subscribeDry } from '../dry/settings';
+import { getDry } from '../dry/settings';
+import type { PaperKind } from '../dry/paper';
+import { getDab } from '../dab/settings';
+import { isPixelBrushTool, subscribeSpecs } from '../dab/live';
+import { mediumInfo } from '../dry/maths';
+import { pixelNameOf } from './pixelTipList';
 import { flashFor, type Flash, type Moment } from './parts';
 import { everyBrush, pickedBrushId, subscribeBrushes } from './presets';
 
@@ -41,20 +46,41 @@ export function showFlash(f: Flash): void {
 
 /** Starts noticing changes. Called once at launch (with the saved brushes). Returns what stops it. */
 export function startBrushFlash(): () => void {
+  const state = () => store().get().ui;
+  const onPixel = () => isPixelBrushTool(state().tool);
+  // The paper a line is drawn on: the brush's own when it keeps one, else the sheet's.
+  const effective = (): PaperKind => {
+    if (onPixel()) return getDab().grain?.paper ?? getDry().paper;
+    const t = state().brush.tip;
+    return t?.dry && t.paper ? t.paper : getDry().paper;
+  };
+  const pixelNow = (): Moment['pixel'] => {
+    if (!onPixel()) return null;
+    const live = { dab: getDab(), medium: getDry().medium };
+    const pic = live.dab.tip === 'picture' ? `:${live.dab.picture?.w ?? 0}x${live.dab.picture?.h ?? 0}` : '';
+    return { tip: live.dab.tip + pic, tipName: pixelNameOf('tip', live), stick: state().tool === 'charcoal' ? live.medium : null, stickName: mediumInfo(live.medium).label };
+  };
   const moment = (): Moment => {
     const id = pickedBrushId();
-    return { id, name: id ? (everyBrush().find((p) => p.id === id)?.name ?? '') : '', brush: store().get().ui.brush, paper: getDry().paper };
+    return { id, name: id ? (everyBrush().find((p) => p.id === id)?.name ?? '') : '', brush: state().brush, paper: effective(), pixel: pixelNow() };
   };
   let prev = moment();
+  let prevDab = getDab();
+  let prevMedium = getDry().medium;
+  let prevTool = state().tool;
   const look = () => {
     // Almost every call is nothing new (drawing, a slider drag and a list change all land here), so look cheaply first.
-    if (pickedBrushId() === prev.id && store().get().ui.brush === prev.brush && getDry().paper === prev.paper) return;
+    if (pickedBrushId() === prev.id && state().brush === prev.brush && state().tool === prevTool && getDab() === prevDab && getDry().medium === prevMedium && effective() === prev.paper) return;
     const now = moment();
-    const f = flashFor(prev, now);
+    // Moving to another tool is not a change of the brush (unless it picked another brush): start from here.
+    const f = state().tool === prevTool || pickedBrushId() !== prev.id ? flashFor(prev, now) : null;
     prev = now;
+    prevDab = getDab();
+    prevMedium = getDry().medium;
+    prevTool = state().tool;
     if (f) showFlash(f);
   };
-  const offs = [store().subscribe(look), subscribeBrushes(look), subscribeDry(look)];
+  const offs = [store().subscribe(look), subscribeBrushes(look), subscribeSpecs(look)];
   return () => {
     for (const off of offs) off();
     if (timer) clearTimeout(timer);

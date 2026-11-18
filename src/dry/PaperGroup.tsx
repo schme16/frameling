@@ -1,6 +1,7 @@
 // The Paper group: one control for the paper, the same in every tool that catches on it (chalk and charcoal, the pixel
 // brush with grain on, a chalk or charcoal tip that catches on paper). The paper is the sheet's: picking one here picks it
-// for all of them. A pixel brush can keep a paper of its own, and the group says so in words, never only by a colour.
+// for all of them. A brush, vector or pixel, can keep a paper of its own, and the group says so in words, never only by a
+// colour. A brush that keeps one counts it as a part of the brush (`part`): as it comes, or changed, with a small reset.
 import type { ReactNode } from 'react';
 import { ActionButton, Tip, Toggle } from '../canvas/controls';
 import { withChoice } from '../core/choices';
@@ -24,9 +25,11 @@ interface Props {
   off?: ReactNode;
   /** Extra words under the paper choice, for what is particular to the tool. */
   tip?: string;
+  /** The paper as a part of a saved brush: whether there is a saved brush to compare with, whether the paper differs from it, and how to put it back. */
+  part?: { saved: boolean; changed: boolean; reset: () => void };
 }
 
-export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
+export function PaperGroup({ own, onOwn, toggle, children, off, tip, part }: Props) {
   const sheet = useDry((s) => s.paper);
   const open = !toggle || toggle.checked;
   const now = paperNow(sheet, own);
@@ -57,6 +60,20 @@ export function PaperGroup({ own, onOwn, toggle, children, off, tip }: Props) {
         {open && (
           <span className="pg-now" data-source={now.source}>
             {paperInfo(now.paper).label}, {now.source === 'sheet' ? 'the sheet’s' : 'this brush’s own'}
+          </span>
+        )}
+        {part?.saved && own !== undefined && (
+          <span className="bp-st" data-on={part.changed || undefined}>
+            {part.changed && <i aria-hidden="true" />}
+            {part.changed ? 'changed' : 'as it comes'}
+            {part.changed && (
+              <button type="button" className="bp-reset" data-control="reset-paper" data-command="brush.resetPaper" onClick={part.reset} title="Put the paper back as this brush comes" aria-label="Put the paper back as this brush comes">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3.5 6.5h6a3 3 0 0 1 0 6H6" />
+                  <path d="M6 3.5 3.2 6.5 6 9.5" />
+                </svg>
+              </button>
+            )}
           </span>
         )}
       </header>

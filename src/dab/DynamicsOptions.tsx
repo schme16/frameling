@@ -1,6 +1,10 @@
 // The pixel brush options for what moves a dab (pen, speed, fade), colour that changes along the stroke, and texture
 // (paper grain and a dual tip). Each is a fold under the main options so the first look stays small. Words are plain,
 // with the paint program's term second.
+import { brushesVersion, useBrushPresets } from '../brushes/presets';
+import { pixelPartsOf } from '../brushes/pixelParts';
+import { resetPaper, savedPixelBrush } from '../brushes/partsActions';
+import { currentSpec } from './live';
 import { ActionButton, Field, Choice, Slider, Tip, Toggle, MoreOptions } from '../canvas/controls';
 import { CurveEditor } from './CurveEditor';
 import { BRUSH_BLENDS } from './blend';
@@ -156,8 +160,12 @@ export function ColourSection() {
 /** The paper the brush catches on: the shared Paper group, with how much it catches and how big the grain is. */
 export function PaperSection() {
   const g = useDab((x) => x.grain);
+  useBrushPresets(brushesVersion);
+  const was = savedPixelBrush();
+  const changed = pixelPartsOf(was?.pixel, currentSpec()).paper;
   return (
     <PaperGroup
+      part={{ saved: !!was, changed, reset: () => void resetPaper() }}
       own={g?.paper}
       onOwn={(paper) => g && setDab({ grain: { ...g, paper } })}
       toggle={{ checked: !!g, onChange: (on) => setDab({ grain: on ? DEFAULT_GRAIN : null }), hint: 'Paint catches on the high points of paper, so light strokes break into specks and pressing harder fills them in. The paper is the sheet\u2019s, the same one chalk and charcoal use.' }}

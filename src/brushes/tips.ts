@@ -16,6 +16,9 @@ import { MAX_STAMP, hasColours, pixelStampFrom, readPixelStamp, vectorStampFrom,
 import { choiceWord } from '../words/choices';
 import { parseTipId } from './tipList';
 import { parseStickId } from './stickList';
+import { parsePixelStickId, parsePixelTipId } from './pixelTipList';
+import { getDab, setDab } from '../dab/settings';
+import { setMedium } from '../dry/settings';
 import type { DryId } from '../dry/maths';
 
 export type PixelStampColours = 'own' | 'mine';
@@ -61,6 +64,15 @@ export function patchTip(patch: Partial<BrushTip>): void {
   setBrush((b) => (b.tip ? { ...b, tip: { ...b.tip, ...patch } } : b));
 }
 
+/** The paper the brush keeps for itself, or none (undefined): then its line catches on the sheet's paper. Nothing happens on a tip with no stick. */
+export function setOwnPaper(paper: BrushTip['paper']): void {
+  setBrush((b) => {
+    if (!b.tip || !b.tip.dry) return b;
+    const { paper: _p, ...rest } = b.tip;
+    return { ...b, tip: paper ? { ...rest, paper } : rest };
+  });
+}
+
 /** How matte the tip's paint is, 0 to 1. Off takes the setting out of the tip, so a brush that never had it stays as it was. */
 export function setMatte(amount: number): void {
   setBrush((b) => {
@@ -79,6 +91,13 @@ export function setStampShape(shape: StampShape): void {
 
 /** Picks a tip from the picker by its id (see tipList.ts): a kind, or a stamp with its shape. False for anything else. */
 export function pickTip(id: string): boolean {
+  const pixel = parsePixelTipId(id);
+  if (pixel) {
+    // A picture tip with no picture opens the editor first, as the Picture button always did.
+    if (pixel === 'picture' && !getDab().picture) void import('../dab/pictureTip').then((m) => m.editPictureTip());
+    else setDab({ tip: pixel });
+    return true;
+  }
   const p = parseTipId(id);
   if (!p) return false;
   setTipKind(p.kind);
@@ -88,6 +107,11 @@ export function pickTip(id: string): boolean {
 
 /** Picks a stick from the picker by its id (see stickList.ts). False for anything else. */
 export function pickStick(id: string): boolean {
+  const pixel = parsePixelStickId(id);
+  if (pixel) {
+    setMedium(pixel);
+    return true;
+  }
   const dry = parseStickId(id);
   if (!dry) return false;
   setStick(dry);

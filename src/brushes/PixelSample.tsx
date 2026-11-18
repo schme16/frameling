@@ -52,3 +52,24 @@ export function PixelTip({ spec, w, h, on }: { spec: PixelSpec; w: number; h: nu
   }, [spec, w, h, seen, theme, on]);
   return <canvas ref={ref} className="pk-thumb pk-pixel" width={w} height={h} style={{ width: w, height: h }} aria-hidden="true" />;
 }
+
+/** The big sample at the top of the brush options, for a pixel brush: the same box and place as the vector Brush's preview, drawn by the pixel engine one pixel to a pixel. */
+export function PixelPreview({ spec }: { spec: PixelSpec }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const [w, setW] = useState(0);
+  useLayoutEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    setW(Math.round(c.clientWidth));
+    if (typeof ResizeObserver === 'undefined') return;
+    const watch = new ResizeObserver(() => setW(Math.round(c.clientWidth)));
+    watch.observe(c);
+    return () => watch.disconnect();
+  }, []);
+  const theme = useThemeTick();
+  useEffect(() => {
+    const c = ref.current;
+    if (c) paint(c, spec, 'stroke', w || 220, 64);
+  }, [spec, w, theme]);
+  return <canvas ref={ref} className="cv-preview pk-pixel" data-control="preview" aria-label="Preview of the brush stroke" role="img" />;
+}

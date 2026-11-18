@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'pixel-brush': `The **Pixel brush** draws a line as a row of **dabs**: one small stamp after another along the way you drag. You shape the stamp (its **tip**), how far apart the stamps go (the **spacing**), and whether they wander off the line (**scatter**). It works on **pixel layers**, and it is the quickest way to a pencil, a chunky marker, a chisel, a dotted line or a trail of stars.
 
-**Draw with it:** pick the **Pixel brush** (**Alt+Shift+N**), choose a colour and drag. Or open the [brush picker](help:brush-picker) at the top of its options and pick one that comes ready. The cursor is the real shape of the tip, turned and flattened as set.
+**Draw with it:** pick the **Pixel brush** (**Alt+Shift+N**), choose a colour and drag. Or open the [brush picker](help:brush-picker) under the preview and pick one that comes ready. The options read like the Brush's: see [parts of a brush](help:brush-parts). The cursor is the real shape of the tip, turned and flattened as set.
 
 **The things you reach for:**
 - **Tip:** **Round**, **Square**, or **Picture**. A picture tip is a little drawing of your own: press **Draw a picture...** to draw it on a grid, or start from a picture file or your selection. See [draw your own picture tip](help:pixel-brush-picture).
@@ -15,7 +15,7 @@ export const bodies: Record<string, string> = {
 
 **Further folds, each with its own help:** [Pen, speed and fade](help:pixel-brush-dynamics) lets the pen, your speed or a fade-out change each dab, and **Colour changes** lets the colour wander or smear. The **Paper** box ([paper and dual tip](help:pixel-brush-texture)) gives the brush a paper to catch on, and **Dual tip** adds a second tip of dots.
 
-**Keep your brushes:** press **Save as...** in the picker. The same picker holds pixel brushes for the soft paint tools and chalk and charcoal. See [saved brushes](help:brush-presets).
+**Keep your brushes:** press **Save as...** in the picker. The same picker holds the soft paint and chalk and charcoal brushes. See [saved brushes](help:brush-presets).
 
 **Pixel art stays pixel art.** With sharp pixels nothing is see-through. If the layer has its [palette locked](help:palette-lock), a smooth edge is dithered into colours you already have, and the options say so. It follows [mirror drawing](help:pixel-mirror). The Pen page's pressure makes it bigger or denser, unless the brush has its own, which then wins so it never counts twice.
 

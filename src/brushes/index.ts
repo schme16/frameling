@@ -24,7 +24,7 @@ import {
   updateActive,
 } from './presets';
 import { flipRowStyle, requestPicker } from './picker';
-import { backToHowItCame, partsNow, resetStick, resetTip, savedBrush } from './partsActions';
+import { backToHowItCame, partsNow, resetPaper, resetStick, resetTip, savedForSide } from './partsActions';
 
 export { startBrushPresets } from './presets';
 
@@ -100,8 +100,8 @@ registerCommands([
     description: 'Put the tip, the stick and the rest back as the brush you picked comes, undoing your changes to it.',
     help: 'brush-parts',
     keywords: ['brush', 'revert', 'undo changes', 'reset', 'as it came', 'back', 'original', 'restore', 'changed'],
-    enabled: () => currentSide() === 'vector' && partsNow().changed,
-    reason: () => (partsNow().changed ? undefined : savedBrush() ? 'The brush is as it comes' : 'Pick a brush first'),
+    enabled: () => partsNow().changed,
+    reason: () => (partsNow().changed ? undefined : savedForSide() ? 'The brush is as it comes' : 'Pick a brush first'),
     run: () => void backToHowItCame(),
   },
   {
@@ -111,8 +111,8 @@ registerCommands([
     description: 'Give the brush the tip it came with, and the stick that goes with it, and leave the rest as it is.',
     help: 'brush-parts',
     keywords: ['brush', 'tip', 'reset', 'revert', 'as it came', 'back', 'original', 'changed'],
-    enabled: () => currentSide() === 'vector' && partsNow().tip,
-    reason: () => (partsNow().tip ? undefined : savedBrush() ? 'The tip is as the brush comes' : 'Pick a brush first'),
+    enabled: () => partsNow().tip,
+    reason: () => (partsNow().tip ? undefined : savedForSide() ? 'The tip is as the brush comes' : 'Pick a brush first'),
     run: () => void resetTip(),
   },
   {
@@ -122,9 +122,20 @@ registerCommands([
     description: 'Give the brush the stick it came with, and leave the tip and the rest as they are.',
     help: 'brush-parts',
     keywords: ['brush', 'stick', 'reset', 'revert', 'as it came', 'back', 'original', 'changed'],
-    enabled: () => currentSide() === 'vector' && partsNow().stick,
-    reason: () => (partsNow().stick ? undefined : savedBrush() ? 'The stick is as the brush comes' : 'Pick a brush first'),
+    enabled: () => partsNow().stick,
+    reason: () => (partsNow().stick ? undefined : savedForSide() ? 'The stick is as the brush comes' : 'Pick a brush first'),
     run: () => void resetStick(),
+  },
+  {
+    id: 'brush.resetPaper',
+    label: 'Put the paper back as the brush comes',
+    category: 'Draw',
+    description: 'Give the brush the paper it came with (its own, or the sheet\'s if it came without one), and leave the rest as it is.',
+    help: 'brush-parts',
+    keywords: ['brush', 'paper', 'reset', 'revert', 'as it came', 'back', 'original', 'changed'],
+    enabled: () => partsNow().paper,
+    reason: () => (partsNow().paper ? undefined : savedForSide() ? 'The paper is as the brush comes' : 'Pick a brush first'),
+    run: () => void resetPaper(),
   },
   {
     id: 'brush.update',

@@ -27,18 +27,18 @@ describe('partsOf', () => {
   });
   it('marks the tip when it is another kind, and the stick that came along with it', () => {
     const live = { ...pencil, tip: defaultTip('chalk') };
-    expect(partsOf(pencil, live)).toEqual({ changed: true, tip: true, stick: true, other: false });
+    expect(partsOf(pencil, live)).toEqual({ changed: true, tip: true, stick: true, other: false, paper: false });
   });
   it('marks only the stick when only the stick changed', () => {
     const live = { ...pencil, tip: { ...pencil.tip!, dry: 'soft-pencil' as const } };
-    expect(partsOf(pencil, live)).toEqual({ changed: true, tip: false, stick: true, other: false });
+    expect(partsOf(pencil, live)).toEqual({ changed: true, tip: false, stick: true, other: false, paper: false });
   });
   it('marks a tweaked tip (same kind, other grain) as a changed tip', () => {
     const live = { ...pencil, tip: { ...pencil.tip!, grain: 2 } };
     expect(partsOf(pencil, live)).toMatchObject({ changed: true, tip: true, stick: false });
   });
   it('marks the rest when the size moves, and leaves the parts alone', () => {
-    expect(partsOf(pencil, { ...pencil, size: pencil.size + 4 })).toEqual({ changed: true, tip: false, stick: false, other: true });
+    expect(partsOf(pencil, { ...pencil, size: pencil.size + 4 })).toEqual({ changed: true, tip: false, stick: false, other: true, paper: false });
   });
 });
 
@@ -107,9 +107,9 @@ describe('in use', () => {
   it('a stick change marks only the stick, and putting it back leaves a changed size alone', () => {
     pickStick('stick:crayon');
     store().setUi((u) => ({ brush: { ...u.brush, size: 41 } }));
-    expect(partsNow()).toMatchObject({ tip: false, stick: true, other: true });
+    expect(partsNow()).toMatchObject({ tip: false, stick: true, other: true, paper: false });
     expect(resetStick()).toBe(true);
-    expect(partsNow()).toMatchObject({ stick: false, other: true });
+    expect(partsNow()).toMatchObject({ stick: false, other: true, paper: false });
     expect(store().get().ui.brush.size).toBe(41);
   });
   it('Back to how it came puts everything back', () => {

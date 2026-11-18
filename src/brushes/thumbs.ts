@@ -27,6 +27,7 @@ export const PREVIEW_SEED = 7;
  * catches on the paper's tooth here exactly as it does on the page. Every preview of a brush goes through this.
  */
 export function drawPreviewStroke(g: CanvasRenderingContext2D, points: StrokePoint[], brush: BrushSettings, color: string, paper?: PaperKind): void {
+  // The line already catches on the brush's own paper when it keeps one, else the sheet's (toothEffects).
   const shape = buildStroke(points, brush, color, 1, false, PREVIEW_SEED);
   // A picture can be drawn on a paper of its own (the stick pictures use the smoothest), not the sheet's.
   const at = paper ? PAPERS.findIndex((p) => p.id === paper) : -1;
@@ -35,7 +36,7 @@ export function drawPreviewStroke(g: CanvasRenderingContext2D, points: StrokePoi
 }
 
 /** The paper a picture of this brush is drawn on: only a line that catches on paper (a stick) has one to tell. */
-export const paperOf = (brush: BrushSettings, paper?: PaperKind): string => (brush.tip?.dry ? (paper ?? getDry().paper) : '');
+export const paperOf = (brush: BrushSettings, paper?: PaperKind): string => (brush.tip?.dry ? (paper ?? brush.tip.paper ?? getDry().paper) : '');
 
 /** The size the long sample is drawn at: the brush's own, scaled down to fit the row and capped so a fat brush stays inside. */
 export const sampleSize = (size: number, h: number): number => Math.max(1.2, Math.min(size * 0.6, h * 0.66));

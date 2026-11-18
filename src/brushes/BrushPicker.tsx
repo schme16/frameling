@@ -15,6 +15,8 @@ import { PixelStroke } from './PixelSample';
 import { Stroke } from './Stroke';
 import { StickPicture, TipPicture } from './pictures';
 import { activeStick } from './stickList';
+import { pixelNameOf } from './pixelTipList';
+import { usePixelLive } from './usePixelLive';
 import './picker.css';
 
 const Panel = lazyComponent(lazyModule(() => import('./BrushPickerPanel').then((m) => m.Panel), { warm: true }));
@@ -27,11 +29,14 @@ export function BrushPicker({ side = 'vector', disabled }: { side?: PickerSide; 
   const tips = isFixedSide(side);
   const words = side === 'stick' ? FIXED_WORDS.stick : FIXED_WORDS.tip;
   const custom = customOf(live.tip);
-  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom) : []), [tips, side, live, custom]);
+  // On a pixel brush tool the Tip and Stick pickers list what the pixel engine has.
+  const pixelLive = usePixelLive();
+  const pixel = tips ? pixelLive : null;
+  const tipList = useMemo(() => (tips ? fixedRows(side, live, custom, pixel) : []), [tips, side, live, custom, pixel]);
   const all = tips ? tipList : brushesOnSide(side);
-  const { activeId, changed } = tips ? { activeId: fixedActiveId(side, live), changed: false } : stateFor(side);
-  const spec = side === 'pixel' ? (currentSpec() ?? all.find((p) => p.id === activeId)?.pixel ?? null) : null;
+  const { activeId, changed } = tips ? { activeId: fixedActiveId(side, live, pixel), changed: false } : stateFor(side);
   const active = all.find((p) => p.id === activeId);
+  const spec = side === 'pixel' ? (currentSpec() ?? active?.pixel ?? null) : pixel ? (active?.pixel ?? null) : null;
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const big = all.length > SMALL_LIBRARY;
@@ -71,7 +76,7 @@ export function BrushPicker({ side = 'vector', disabled }: { side?: PickerSide; 
         </span>
         <span className="pk-btn-text">
           <span className="pk-btn-name">
-            <span className="pk-btn-name-text">{side === 'stick' ? active?.name : tips ? tipName(live.tip) : active ? active.name : side === 'pixel' ? 'Custom pixel brush' : 'Custom brush'}</span>
+            <span className="pk-btn-name-text">{pixel && (side === 'tip' || side === 'stick') ? pixelNameOf(side, pixel) : side === 'stick' ? active?.name : tips ? tipName(live.tip) : active ? active.name : side === 'pixel' ? 'Custom pixel brush' : 'Custom brush'}</span>
             {active && changed && <i className="bp-changed" aria-label="changed" />}
           </span>
           {sub && <span className="pk-btn-sub">{sub}</span>}

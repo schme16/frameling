@@ -1,14 +1,14 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'brush-parts': `A **brush** is a bundle of settings you pick in one click. Inside it are a **tip** (what the line is made of), for chalk and charcoal a **stick** (what you are drawing with), and the size, smoothing and pointy ends. **Paper** is not in the bundle: it belongs to the sheet.
+  'brush-parts': `A **brush** is a bundle of settings you pick in one click. Inside it are a **tip** (what the line is made of), for chalk and charcoal a **stick** (what you are drawing with), and the size, smoothing and pointy ends. **Paper** is the sheet's, unless the brush keeps its own.
 
 **The four, in one line each:**
 - **Brush:** the whole bundle, like Sketch pencil or Ink. Picking one replaces the tip, the stick and the rest.
 - **Tip:** what the line is made of: smooth, a pen nib, bristles, chalk, charcoal, watercolour or stamps. Picking one gives the brush that tip with its usual settings.
 - **Stick:** only for the **Chalk** and **Charcoal** tips, and only while **Catch on paper** is on. It is vine charcoal, chalk, pastel, crayon or a pencil, and it decides how the line catches on the paper.
-- **Paper:** the sheet's grain, from **Smooth** to **Rough**. Every tool that catches on paper uses the same one, and picking a brush leaves it alone.
+- **Paper:** the sheet's grain, from **Smooth** to **Rough**. Every tool that catches on paper uses the same one, unless a brush keeps its own. Picking a brush leaves the sheet's alone.
 
-**Parts of this brush:** under the **Brush** picker, **Tip** and **Stick** each say **as it comes** or **changed**. **Changed** has its own small arrow that puts that one part back, and **Back to how it came** puts all of it back. The same words are in the palette (**Ctrl+K**): "back to how the brush came", "put the tip back", "put the stick back".
+**Parts of this brush:** under the **Brush** picker, **Tip** and **Stick** each say **as it comes** or **changed**, and so does **Paper** for a brush that keeps its own. **Changed** has its own small arrow that puts that one part back, and **Back to how it came** puts all of it back. The same words are in the palette (**Ctrl+K**): "back to how the brush came", "put the tip back", "put the stick back", "put the paper back". The pixel brushes have the same box: the **Pixel brush** has a **Tip** (**Round**, **Square** or **Picture**) and **Chalk and charcoal** a **Stick**.
 
 **Why two parts change at once:** picking a **Chalk** tip also gives the brush the **Chalk** stick, so both say **changed**. Pick the stick you want afterwards and only the tip stays marked.
 

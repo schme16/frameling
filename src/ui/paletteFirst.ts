@@ -99,6 +99,7 @@ export const LEFT_OUT_OF_MENUS: Record<string, string> = {
   'brush.backToHowItCame': 'The Back to how it came button, under Parts of this brush in the Brush options',
   'brush.resetTip': 'The small reset beside Tip, under Parts of this brush in the Brush options',
   'brush.resetStick': 'The small reset beside Stick, under Parts of this brush in the Brush options',
+  'brush.resetPaper': 'The small reset beside Paper, in the Brush options, for a brush that keeps its own paper',
   'brush.pixelReset': 'Back to the usual brush, in the pixel brush options',
   // The pixel brush's picture tip, grain and dual tip: each is a button in its own part of the pixel brush options, and the
   // Draw menu is better short.
