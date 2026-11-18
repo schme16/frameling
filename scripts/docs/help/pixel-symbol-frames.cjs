@@ -65,7 +65,7 @@ const entries = [
     steps: [
       L.js(SLIME),
       L.wait(700),
-      { rec: '@', crop: [108, 44, 1172, 716], every: 80 },
+      { rec: '@', crop: [143, 44, 1136, 716], every: 80 },
       L.wait(1500),
       L.cmd('symbols.makeFrames'),
       L.wait(2600),

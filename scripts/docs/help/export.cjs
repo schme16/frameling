@@ -232,7 +232,8 @@ module.exports = [
   // dotLottie is picked so the Playback tick (Loop forever) the topic mentions is in the picture.
   formatEntry('export-lottie', 'bouncing-ball', 'file.exportLottie', undefined, pickOption('dotLottie (.lottie)'), TALL),
   formatEntry('export-svg-animated', 'bouncing-ball', 'file.exportSvgAnimated', undefined, [], TALL),
-  formatEntry('export-interactives', 'hero-sprites', 'file.exportInteractives'),
+  // Interactives is hidden by src/features/flags.json for now, so there is no card to shoot until it is switched on.
+  { ...formatEntry('export-interactives', 'hero-sprites', 'file.exportInteractives'), needs: 'interactives' },
   formatEntry('export-psd', 'bouncing-ball', 'file.exportPsd', undefined, [], TALL),
   formatEntry('export-pdf', 'bouncing-ball', 'file.exportPdf', undefined, [], TALL),
   formatEntry('export-prores', 'bouncing-ball', 'file.exportProres', undefined, [], TALL),

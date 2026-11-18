@@ -305,7 +305,6 @@ const entries = [
       flowInputsDemo(),
       L.panel('clip-flow'),
       L.wait(500),
-      { clickOn: 'button', text: 'Keep them', after: 400 },
       L.cmd('flow.try'),
       L.wait(600),
       { rec: '@', crop: [0, 0, 1280, 765], every: 90 },
