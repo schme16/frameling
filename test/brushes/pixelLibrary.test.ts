@@ -25,6 +25,7 @@ import {
   type BrushPreset,
 } from '../../src/brushes/model';
 import { groupOf } from '../../src/brushes/library';
+import { MERGED_PAIRS } from '../../src/brushes/pairs';
 import { PIXEL_GROUPS, softPicture } from '../../src/brushes/pixelStarters';
 
 const wide = { ...DEFAULT_BRUSH, size: 40 };
@@ -84,20 +85,22 @@ describe('the pixel starters', () => {
     expect(softPicture(3, 1, (x) => x / 2).cells).toEqual([0, 4, 8]);
   });
 
-  it('sit in their own groups and never show on the vector side', () => {
+  it('are in the one list, on either kind of layer, with the ones that are half of a pair folded into their vector brush', () => {
     const all = allPresets([]);
-    expect(onSide(all, 'pixel')).toEqual([...PIXEL_STARTERS]);
-    expect(onSide(all, 'vector')).toEqual([...STARTERS]);
+    expect(onSide(all, 'pixel')).toEqual(all);
+    expect(onSide(all, 'vector')).toEqual(all);
+    expect(all).toHaveLength(STARTERS.length + PIXEL_STARTERS.length - MERGED_PAIRS.length);
     for (const s of PIXEL_STARTERS) expect(groupOf(s)).toBe(s.group);
   });
 });
 
 describe('saving a pixel brush', () => {
-  it('adds it on the pixel side, leaving the vector brushes alone', () => {
+  it('adds it to the one list, leaving the vector brushes alone', () => {
     const r = savePixelPreset([], 'Dots', dab(3), id())!;
     expect(r.replaced).toBe(false);
     expect(r.preset).toMatchObject({ name: 'Dots', tool: 'pixel', pixel: dab(3) });
-    expect(onSide(r.list, 'vector')).toHaveLength(0);
+    // The one list: it shows on a vector layer too, drawn through its translation.
+    expect(onSide(r.list, 'vector')).toHaveLength(1);
   });
 
   it('replaces a pixel brush of the same name, but never a vector one', () => {
@@ -139,17 +142,20 @@ describe('which pixel brush is lit', () => {
     expect(pixelPresetState(dab(77), mine, null)).toEqual({ activeId: null, changed: false });
   });
 
-  it('keeps the vector side from lighting a pixel brush, and the other way round', () => {
+  it('lights a picked brush on both sides, and only a made half when nothing was picked', () => {
     const v: BrushPreset = { id: 'v', name: 'V', tool: 'brush', brush: wide };
     expect(matchPreset(wide, [...mine, v])?.id).toBe('v');
     expect(matchPreset(DEFAULT_BRUSH, mine)?.tool).not.toBe('pixel');
-    expect(pixelPresetState(dab(7), [{ id: 'v', name: 'V', tool: 'brush', brush: wide }], 'v')).toEqual({ activeId: null, changed: false });
+    // Picked on a vector layer, the brush is still lit on a pixel layer, as changed from the half worked out for it.
+    expect(pixelPresetState(dab(7), [{ id: 'v', name: 'V', tool: 'brush', brush: wide }], 'v')).toEqual({ activeId: 'v', changed: true });
+    // With nothing picked, a pixel brush matches only a pixel half that was made, never a worked out one.
+    expect(pixelPresetState(dab(7), [{ id: 'v', name: 'V', tool: 'brush', brush: wide }], null)).toEqual({ activeId: null, changed: false });
   });
 
-  it('steps through one side only', () => {
+  it('steps through the one list, wrapping', () => {
     const side = onSide(allPresets(mine), 'pixel');
     expect(stepPreset(side, side[0].id, -1)?.id).toBe(side.at(-1)!.id);
-    expect(stepPreset(side, side.at(-1)!.id, 1)?.tool).toBe('pixel');
+    expect(stepPreset(side, side.at(-1)!.id, 1)?.id).toBe(side[0].id);
   });
 });
 

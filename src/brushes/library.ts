@@ -122,6 +122,8 @@ export interface PickerFacts {
   /** The section keys open now. null: only the group the brush in use is in. */
   opened: readonly string[] | null;
   query: string;
+  /** The groups the pixel side has come first (a pixel layer). Left out: only when every brush is a pixel one. */
+  pixelFirst?: boolean;
 }
 
 /**
@@ -141,9 +143,10 @@ function groupOrder(name: string, pixelSide: boolean): number {
 export const groupKey = (name: string): string => `group:${name.toLowerCase()}`;
 
 /** The groups and how many brushes each holds, in the order the picker lists them. */
-export function groupsOf(all: readonly BrushPreset[]): { name: string; brushes: BrushPreset[] }[] {
+export function groupsOf(all: readonly BrushPreset[], pixelFirst?: boolean): { name: string; brushes: BrushPreset[] }[] {
   const map = new Map<string, { name: string; brushes: BrushPreset[] }>();
-  const pixelSide = all.length > 0 && all.every((p) => p.tool === 'pixel');
+  // One list serves both kinds of layer: a pixel layer puts the pixel groups first. Without being told, a list of only pixel brushes does.
+  const pixelSide = pixelFirst ?? (all.length > 0 && all.every((p) => p.tool === 'pixel'));
   for (const p of all) {
     const g = groupOf(p);
     const have = map.get(g.toLowerCase());
@@ -155,8 +158,8 @@ export function groupsOf(all: readonly BrushPreset[]): { name: string; brushes: 
 }
 
 /** Every section key that can be folded or opened (for "fold all" and "open all"). */
-export function foldableKeys(f: Pick<PickerFacts, 'all'>): string[] {
-  return ['favourites', 'recent', ...groupsOf(f.all).map((g) => groupKey(g.name))];
+export function foldableKeys(f: Pick<PickerFacts, 'all' | 'pixelFirst'>): string[] {
+  return ['favourites', 'recent', ...groupsOf(f.all, f.pixelFirst).map((g) => groupKey(g.name))];
 }
 
 /** The sections to draw. Searching swaps everything for one flat list of what was found. */
@@ -177,7 +180,7 @@ export function buildSections(f: PickerFacts): Section[] {
   return [
     make('favourites', 'favourites', 'Favourites', favs),
     make('recent', 'recent', 'Recent', recent),
-    ...groupsOf(f.all).map((g) => make(groupKey(g.name), 'group', g.name, g.brushes)),
+    ...groupsOf(f.all, f.pixelFirst).map((g) => make(groupKey(g.name), 'group', g.name, g.brushes)),
   ];
 }
 

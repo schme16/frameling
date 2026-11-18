@@ -267,7 +267,7 @@ export const SUBMENUS: Record<string, SubmenuDef> = {
   },
   brushes: {
     label: 'Saved brushes',
-    items: ['brush.picker', 'brush.favourite', 'brush.rows', '-', 'brush.saveAs', 'brush.update', 'brush.rename', 'brush.delete', '-', 'brush.next', 'brush.previous', '-', 'brush.saveFile', 'brush.copyText', 'brush.addFile', 'brush.pasteText'],
+    items: ['brush.picker', 'brush.favourite', 'brush.rows', '-', 'brush.saveAs', 'brush.update', 'brush.rename', 'brush.delete', '-', 'brush.kept', '-', 'brush.next', 'brush.previous', '-', 'brush.saveFile', 'brush.copyText', 'brush.addFile', 'brush.pasteText'],
     prefixes: ['brush.pick.'],
   },
   brushtips: {

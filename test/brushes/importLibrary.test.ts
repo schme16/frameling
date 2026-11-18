@@ -8,7 +8,9 @@ import '../../src/brushes';
 import { newDoc } from '../../src/core/doc';
 import { resetStore, store } from '../../src/core/store';
 import { readBrushFile } from '../../src/brushes/import';
-import { brushesToText, parseBrushesText, sanitizeList } from '../../src/brushes/model';
+import { brushesToText, parseBrushesText, sanitizeList, vectorHalf } from '../../src/brushes/model';
+import { brushFrom } from '../../src/core/uiMemory';
+import { DEFAULT_BRUSH } from '../../src/core/doc';
 import * as P from '../../src/brushes/presets';
 import { startBrushPresets } from '../../src/brushes/presets';
 import { currentSpec } from '../../src/dab/live';
@@ -47,6 +49,8 @@ describe('imported brushes in the library', () => {
   it('can be picked and become the pixel brush, tip and all', () => {
     P.addImportedBrushes(read('gimp/Charcoal-01.gbr', 'x').brushes, 'G');
     const id = P.myBrushes()[0].id;
+    // On a pixel layer: the brush list is one list, and the layer says which half is drawn.
+    resetStore(newDoc({ pixel: { pixelSize: 8 } }));
     expect(P.applyPreset(id)).toBe(true);
     const spec = currentSpec();
     expect(spec?.kind).toBe('dab');
@@ -69,6 +73,38 @@ describe('imported brushes in the library', () => {
     const again = sanitizeList(stored.presets);
     expect(again.map((p) => p.name)).toEqual(before.map((p) => p.name));
     again.forEach((p, i) => expect(p.pixel).toEqual(before[i].pixel));
+  });
+
+  it('are in the one list on a vector layer too, and draw there as vectors through their translation', () => {
+    const files: [string, string][] = [
+      ['gimp/Charcoal-01.gbr', 'x'], ['gimp/Hardness-050.vbr', 'x'], ['gimp/confetti.gih', 'x'], ['gimp/Star.vbr', 'x'],
+      ['abr/photoshop_dynamics.abr', 'x'], ['abr/photoshop_dual_brush.abr', 'x'], ['abr/soft-round.abr', 'x'],
+      ['krita/small-set.bundle', 'x'], ['procreate/Sequins.brush', 'x'],
+    ];
+    for (const [f, as] of files) {
+      const r = read(f, as);
+      P.addImportedBrushes(r.brushes, 'Set');
+    }
+    const mine = P.myBrushes();
+    expect(mine.length).toBeGreaterThan(8);
+    // On a vector layer, and on a pixel layer: the same imported brushes.
+    for (const p of mine) {
+      expect(P.brushesOnSide('vector').some((x) => x.id === p.id), `${p.name} listed for vectors`).toBe(true);
+      expect(P.brushesOnSide('pixel').some((x) => x.id === p.id), `${p.name} listed for pixels`).toBe(true);
+    }
+    resetStore(newDoc());
+    store().setUi({ tool: 'brush' });
+    for (const p of mine) {
+      expect(P.applyPreset(p.id)).toBe(true);
+      const b = store().get().ui.brush;
+      expect(b, p.name).toEqual(vectorHalf(p));
+      expect(b.size, p.name).toBeGreaterThanOrEqual(1);
+      expect(brushFrom(JSON.parse(JSON.stringify(b)), DEFAULT_BRUSH), p.name).toBeTruthy();
+      expect(P.stateFor('vector'), p.name).toEqual({ activeId: p.id, changed: false });
+    }
+    // What a vector line cannot draw of them is said, for the ones that have such things (a dual tip, dynamics on colour, wet paint...).
+    const said = mine.filter((p) => P.keptFor(p, 'vector').length > 0);
+    expect(said.length).toBeGreaterThan(0);
   });
 
   it('says so when the library is full instead of adding nothing silently', () => {

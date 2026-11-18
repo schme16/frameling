@@ -11,7 +11,7 @@ import '../../src/dab';
 import { preloadPicker } from './preloadPicker';
 import { PIXEL_STARTERS, STARTERS } from '../../src/brushes/model';
 import * as P from '../../src/brushes/presets';
-import { newDoc } from '../../src/core/doc';
+import { DEFAULT_BRUSH, newDoc } from '../../src/core/doc';
 import { setChoice } from '../../src/core/choices';
 import { resetStore, store } from '../../src/core/store';
 import type { BrushTip } from '../../src/core/format';
@@ -23,12 +23,16 @@ import { SoftOptionsFor } from '../../src/soft/Options';
 import { resetDab, setDab } from '../../src/dab/settings';
 import { DEFAULT_DUAL, DEFAULT_GRAIN } from '../../src/dab/texture';
 import { pictureFromBytes } from '../../src/dab/texturePicture';
-import { DEFAULT_TAPER } from '../../src/dab/maths';
+import { DEFAULT_DAB, DEFAULT_TAPER } from '../../src/dab/maths';
 import { resetDry, setMedium } from '../../src/dry/settings';
 import { resetSoft } from '../../src/soft/settings';
 import { setPixelSettings, resetPixelSettings } from '../../src/pixel/settings';
 import { TIDY_CHOICE } from '../../src/tools/quickshape';
-import { BRUSH_PAIRS, ONE_SIDED_BRUSHES, ONE_SIDED_CONTROLS } from './parityGaps';
+import { BRUSH_PAIRS, ONE_SIDED_BRUSHES, ONE_SIDED_CONTROLS, TRANSLATES_FINE } from './parityGaps';
+import { LISTED_STARTERS, madeOn, pixelHalf, vectorHalf } from '../../src/brushes/model';
+import { brushFrom } from '../../src/core/uiMemory';
+import { cleanSpec } from '../../src/dab/spec';
+import { keptOnVectors } from '../../src/brushes/translate';
 import { MEDIA } from '../../src/dry/maths';
 
 vi.mock('../../src/brushes/thumbs', async (orig) => ({ ...(await orig<typeof import('../../src/brushes/thumbs')>()), drawPreviewStroke: () => undefined }));
@@ -53,6 +57,7 @@ beforeEach(() => {
   resetDry();
   resetSoft();
   resetPixelSettings();
+  P.pickNone();
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -92,6 +97,28 @@ const brushWith = (tip: BrushTip | undefined) => () => store().setUi((u) => ({ b
 const TWO_COLOUR = { w: 2, h: 2, colours: ['#ff0000', '#0000ff'], cells: [1, 2, 2, 1], keep: true };
 const PICTURE = pictureFromBytes(8, new Uint8Array(64).fill(128));
 
+const ROUTES = (to: string, from: string) => ({ from, to, amount: 0.5, invert: false });
+/** A pixel brush with everything a vector line cannot draw, and a vector brush with everything a pixel layer cannot, picked on the other kind of layer: the greyed controls. */
+const EVERYTHING_PIXEL = () => ({
+  ...DEFAULT_DAB,
+  wet: 0.5,
+  hardness: 0.5,
+  flow: 0.5,
+  opacity: 0.5,
+  blend: 'multiply' as const,
+  taper: { ...DEFAULT_TAPER, opacity: 0.5 },
+  dual: DEFAULT_DUAL,
+  grain: { ...DEFAULT_GRAIN, picture: PICTURE },
+  dynamics: [ROUTES('size', 'speed'), ROUTES('flow', 'fade'), ROUTES('opacity', 'speed'), ROUTES('angle', 'direction'), ROUTES('scatter', 'tilt'), ROUTES('mix', 'random'), ROUTES('hue', 'fade'), ROUTES('lightness', 'random'), ROUTES('saturation', 'random')] as never,
+});
+const pickImported = (dab: object) => () => {
+  P.addImportedBrushes([{ name: 'Parity kept', dab: dab as never }], 'Parity');
+  P.applyPreset(P.myBrushes().at(-1)!.id);
+};
+const pickVector = (tip: BrushTip) => () => {
+  P.addBrushesFromText(JSON.stringify({ format: 'frameling-brushes', version: 1, presets: [{ name: 'Parity kept', tool: 'brush', brush: { ...DEFAULT_BRUSH, tip } }] }));
+  P.applyPreset(P.myBrushes().at(-1)!.id);
+};
 const VECTOR: Look[] = [
   { name: 'plain', doc: vectorDoc, tool: 'brush', picker: true, render: () => <BrushOptions />, setup: () => (setChoice(TIDY_CHOICE, 'on'), setPixelSettings({ symmetry: 'h' })) },
   { name: 'chalk on paper', doc: vectorDoc, tool: 'brush', render: () => <BrushOptions />, setup: brushWith({ ...defaultTip('chalk'), dry: 'chalk' }) },
@@ -112,9 +139,9 @@ const VECTOR: Look[] = [
       store().setUi((u) => ({ brush: { ...u.brush, size: u.brush.size + 3 } }));
     },
   },
+  { name: 'a pixel brush picked: what vectors do not draw, greyed', doc: vectorDoc, tool: 'brush', render: () => <BrushOptions />, setup: () => pickImported(EVERYTHING_PIXEL())() },
 ];
 
-const ROUTES = (to: string, from: string) => ({ from, to, amount: 0.5, invert: false });
 const PIXEL: Look[] = [
   { name: 'Brush (B) on a pixel layer', doc: pixelDoc, tool: 'brush', picker: true, render: () => <BrushOptions />, setup: () => setDab({ size: 4 }) },
   { name: 'Brush (B) on a pixel layer, with a picture brush', doc: pixelDoc, tool: 'brush', render: () => <BrushOptions />, setup: () => setDab({ tip: 'picture', picture: TWO_COLOUR, size: 2, spacing: 1 }) },
@@ -143,6 +170,9 @@ const PIXEL: Look[] = [
       return <C />;
     } })),
   ...MEDIA.slice(0, 1).map((m): Look => ({ name: `Chalk and charcoal: ${m.label}`, doc: pixelDoc, tool: 'charcoal', render: () => <DryOptionsPanel />, setup: () => setMedium(m.id) })),
+  // A vector brush picked on a pixel layer: what pixels do not draw of it, greyed.
+  ...(['bristle', 'watercolour', 'along', 'edged'] as const).map((k): Look => ({ name: `Brush (B) on a pixel layer, a vector ${k} brush picked`, doc: pixelDoc, tool: 'brush', render: () => <BrushOptions />, setup: pickVector(defaultTip(k)) })),
+  { name: 'Brush (B) on a pixel layer, a stamp with gaps that vary and a matte finish picked', doc: pixelDoc, tool: 'brush', render: () => <BrushOptions />, setup: pickVector({ ...defaultTip('stamp'), gapVary: 0.5, matte: 0.5 }) },
 ];
 
 /** Every control id seen on one side, across all the looks of it. */
@@ -151,6 +181,8 @@ function seen(looks: Look[]): Set<string> {
   for (const l of looks) {
     resetStore(l.doc());
     store().setUi({ tool: l.tool });
+    // Each look starts with no brush picked: one picked in an earlier look would be lit (and changed) here too.
+    P.pickNone();
     l.setup?.();
     act(() => root.render(l.render()));
     openFolds();
@@ -195,8 +227,9 @@ describe('the vector Brush and the pixel brush offer the same brushes', () => {
     const pairedP = BRUSH_PAIRS.map((x) => x[1]);
     const listedV = ONE_SIDED_BRUSHES.filter((g) => g.side === 'vector').map((g) => g.id);
     const listedP = ONE_SIDED_BRUSHES.filter((g) => g.side === 'pixel').map((g) => g.id);
+    const fine = TRANSLATES_FINE.map((g) => g.id);
     expect(vecIds.filter((i) => !pairedV.includes(i) && !listedV.includes(i)), 'vector brushes with no pixel pair and not listed').toEqual([]);
-    expect(pixIds.filter((i) => !pairedP.includes(i) && !listedP.includes(i)), 'pixel brushes with no vector pair and not listed').toEqual([]);
+    expect(pixIds.filter((i) => !pairedP.includes(i) && !listedP.includes(i) && !fine.includes(i)), 'pixel brushes with no vector pair and not listed').toEqual([]);
   });
   it('keeps the list and the pairs honest', () => {
     const pairedV = BRUSH_PAIRS.map((x) => x[0]);
@@ -212,5 +245,32 @@ describe('the vector Brush and the pixel brush offer the same brushes', () => {
       expect(pixIds, `${p} in a pair`).toContain(p);
     }
     expect(new Set(pairedV).size).toBe(pairedV.length);
+  });
+  it('has a translation that loses nothing for the ones that are listed as translating fine', () => {
+    for (const g of TRANSLATES_FINE) {
+      const b = LISTED_STARTERS.find((x) => x.id === g.id)!;
+      expect(b, g.id).toBeTruthy();
+      expect(madeOn(b, 'vector'), `${g.id} has no vector half made`).toBe(false);
+      expect(keptOnVectors(b.pixel!), `${g.id} loses something`).toEqual([]);
+      expect(ONE_SIDED_BRUSHES.some((o) => o.id === g.id), `${g.id} is on the one sided list too`).toBe(false);
+    }
+  });
+});
+
+describe('one list, drawn on either kind of layer', () => {
+  it('is the same list for a vector layer and a pixel layer, with every pair once', () => {
+    const v = P.brushesOnSide('vector').map((b) => b.id);
+    const p = P.brushesOnSide('pixel').map((b) => b.id);
+    expect(v).toEqual(p);
+    expect(new Set(v).size).toBe(v.length);
+    for (const [, px] of BRUSH_PAIRS.filter((x) => x[2] === 'same')) expect(v, `${px} is folded into its pair`).not.toContain(px);
+    expect(v).toHaveLength(STARTERS.length + PIXEL_STARTERS.length - BRUSH_PAIRS.filter((x) => x[2] === 'same').length);
+  });
+  it('gives every brush both halves, one made or both, and each reads as a valid brush', () => {
+    for (const b of LISTED_STARTERS) {
+      expect(brushFrom(JSON.parse(JSON.stringify(vectorHalf(b))), DEFAULT_BRUSH), `${b.id} vector half`).toBeTruthy();
+      expect(cleanSpec(JSON.parse(JSON.stringify(pixelHalf(b)))), `${b.id} pixel half`).toBeTruthy();
+      expect(madeOn(b, 'vector') || madeOn(b, 'pixel'), `${b.id} has a half made`).toBe(true);
+    }
   });
 });

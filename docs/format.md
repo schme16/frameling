@@ -370,6 +370,14 @@ when comparing two drawings for "same look" (as `id` is ignored).
   `scatter`, `sizeJitter`, `angleJitter`, `flow`, `opacity`, `aliased`, and since the second slice `dynamics` (a list of `{ from, to, amount, invert }` routes), `fadeLength`, `grain`, `dual` and `wet`; a `picture` (`PixelStamp`) has an optional `soft: true` (each cell's see-through is the amount of paint, in the colour picked; an older Frameling reads it as a plain picture), set by brushes brought in from GIMP and Photoshop files, see `docs/brush-import.md`; every field optional on read, with a default and a range, and a file from before the second slice reads as a plain brush; see `docs/pixel-brush.md`),
   `{ kind: 'soft', tool, size, hardness, flow }` or `{ kind: 'dry', medium, paper, size, hardness, press }`. An older Frameling
   skips a `'pixel'` brush as unreadable and keeps the rest. The brush in use is the `frameling.pixelBrush.v1` setting.
+  Both kinds may carry an optional `pair`: the other half of the brush, when it was made on both sides. A `'brush'` preset's `pair` is a
+  `PixelSpec`, a `'pixel'` preset's is a vector brush (the same fields as `brush`). Left out, the other half is worked out from this one
+  when a layer of that kind needs it (`toPixel` and `toVector`, `src/brushes/translate.ts`) and the preset is never changed for it, so
+  swapping to the other kind of layer and back loses nothing. A pair that is rubbish or of the wrong kind is dropped on read. The
+  `frameling-brushes` file stays version 1: an older Frameling ignores `pair`, and if it rewrites the file the pair is dropped and
+  rebuilt by translation. Saved brushes live under `frameling.brushPresets` in the same shape. The brush list is one list for both kinds
+  of layer; a vector starter and a pixel starter that draw the same thing are one brush with two halves (`MERGED_PAIRS`,
+  `src/brushes/pairs.ts`), and an old id of the pixel half still opens it (`canonicalId`).
 - `FillShape` (`type: 'fill'`): `paths: SubPath[]` (even-odd), `color`, `opacity`, `gradient?` (`e352d32`; `color`
   stays as its first stop).
 - `PathShape` (`type: 'path'`): `paths`, `fill: Color | null`, `stroke: {color, width, join, cap} | null`, `opacity`,

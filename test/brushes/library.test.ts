@@ -29,7 +29,8 @@ const mk = (id: string, name: string, group?: string): BrushPreset => ({ id, nam
 const big = (n: number): BrushPreset[] => allPresets(Array.from({ length: n }, (_, i) => mk(`m${i}`, `Brush ${i}`, i % 2 ? 'Inking' : i % 3 ? 'Painting' : undefined)));
 
 // The two sides share some group names (Pencils, Pens...), and a shared group sits where the vector list has it.
-const SHARED_ORDER = [...new Set<string>([...STARTER_GROUPS, ...PIXEL_GROUPS])];
+// Every dry medium is half of a pair now, so 'Dry media' has no brush of its own in the one list.
+const SHARED_ORDER = [...new Set<string>([...STARTER_GROUPS, ...PIXEL_GROUPS])].filter((g) => g !== 'Dry media');
 
 describe('groups', () => {
   it('puts each starter in its own group (Pens, Paint...) and a brush with no group in My brushes', () => {

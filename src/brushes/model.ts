@@ -7,8 +7,10 @@ import { brushFrom } from '../core/uiMemory';
 import { defaultTip, sameTip } from '../geometry/tip';
 import { cleanSpec, sameSpec, specTool, type PixelSpec } from '../dab/spec';
 import { cleanGroup } from './library';
+import { isMergedAway, MERGED_PAIRS } from './pairs';
 import { PIXEL_STARTERS } from './pixelStarters';
 import { STARTERS } from './starters';
+import { toPixel, toVector } from './translate';
 
 /** Which tool a brush came from: the vector Brush, or one of the pixel brush tools (the Pixel brush, soft paint, Chalk and charcoal). */
 export type PresetTool = 'brush' | 'pixel';
@@ -25,7 +27,50 @@ export interface BrushPreset {
   builtin?: boolean;
   /** The group it sits in in the picker (see library.ts). Left out means "My brushes". */
   group?: string;
+  /**
+   * The other half, when the brush was made on both sides: a pixel brush for a vector brush (`tool` 'brush'), a vector
+   * brush for a pixel brush (`tool` 'pixel'). Left out, the other half is worked out from this one when a layer of that
+   * kind needs it (translate.ts), and this brush never changes for it.
+   */
+  pair?: PixelSpec | BrushSettings;
 }
+
+const isSpec = (x: PixelSpec | BrushSettings | undefined): x is PixelSpec => !!x && 'kind' in x;
+
+/** The pixel half a vector brush was made with, if it was made with one. */
+export const madePixel = (p: BrushPreset): PixelSpec | undefined => (p.tool === 'pixel' ? p.pixel : isSpec(p.pair) ? p.pair : undefined);
+/** The vector half a pixel brush was made with, if it was made with one. */
+export const madeVector = (p: BrushPreset): BrushSettings | undefined => (p.tool === 'brush' ? p.brush : p.pair && !isSpec(p.pair) ? p.pair : undefined);
+
+const vectorCache = new WeakMap<BrushPreset, BrushSettings>();
+const pixelCache = new WeakMap<BrushPreset, PixelSpec>();
+
+/** The brush as it is drawn on a vector layer: its own vector half, or the pixel one worked out as a vector brush. The same object each time. */
+export function vectorHalf(p: BrushPreset): BrushSettings {
+  const made = madeVector(p);
+  if (made) return made;
+  let v = vectorCache.get(p);
+  if (!v) {
+    v = p.pixel ? toVector(p.pixel) : p.brush;
+    vectorCache.set(p, v);
+  }
+  return v;
+}
+
+/** The brush as it is drawn on a pixel layer: its own pixel half, or the vector one worked out as a pixel brush. The same object each time. */
+export function pixelHalf(p: BrushPreset): PixelSpec {
+  const made = madePixel(p);
+  if (made) return made;
+  let v = pixelCache.get(p);
+  if (!v) {
+    v = toPixel(p.brush);
+    pixelCache.set(p, v);
+  }
+  return v;
+}
+
+/** True when this side's half of the brush was made, not worked out. */
+export const madeOn = (p: BrushPreset, side: 'vector' | 'pixel'): boolean => (side === 'pixel' ? !!madePixel(p) : !!madeVector(p));
 
 /** How many brushes of your own you can keep. A paid brush pack runs to a few hundred; the picker only draws open groups. */
 export const MAX_PRESETS = 1000;
@@ -64,11 +109,26 @@ export function sameBrush(a: BrushSettings, b: BrushSettings): boolean {
   return close(a.size, b.size) && close(a.thinning, b.thinning) && close(a.smoothing, b.smoothing) && close(a.streamline, b.streamline) && close(a.taperStart, b.taperStart) && close(a.taperEnd, b.taperEnd) && a.capStart === b.capStart && a.capEnd === b.capEnd && sameTip(a.tip, b.tip);
 }
 
-/** Every brush to show: the starters, then yours. */
-export const allPresets = (mine: readonly BrushPreset[]): BrushPreset[] => [...STARTERS, ...PIXEL_STARTERS, ...mine];
+const pixelStarter = new Map(PIXEL_STARTERS.map((p) => [p.id, p]));
+const pairOf = new Map(MERGED_PAIRS);
 
-/** The brushes on one side of the library: the vector Brush's, or the pixel brushes'. */
-export const onSide = (all: readonly BrushPreset[], side: 'vector' | 'pixel'): BrushPreset[] => all.filter((p) => (p.tool === 'pixel') === (side === 'pixel'));
+/**
+ * The starters as the one list has them: a vector starter and a pixel starter that draw the same thing are one brush with
+ * two halves, and the rest are on their own (their other half is worked out). The look-alikes are still two brushes.
+ */
+export const LISTED_STARTERS: readonly BrushPreset[] = [
+  ...STARTERS.map((s) => {
+    const mate = pixelStarter.get(pairOf.get(s.id) ?? '');
+    return mate?.pixel ? { ...s, pair: mate.pixel } : s;
+  }),
+  ...PIXEL_STARTERS.filter((p) => !isMergedAway(p.id)),
+];
+
+/** Every brush to show: the starters, then yours. */
+export const allPresets = (mine: readonly BrushPreset[]): BrushPreset[] => [...LISTED_STARTERS, ...mine];
+
+/** The brushes a kind of layer lists. The same for both: one list, and a brush made for the other kind is drawn through its translation. */
+export const onSide = (all: readonly BrushPreset[], _side: 'vector' | 'pixel'): BrushPreset[] => [...all];
 
 /** Reads one preset out of saved or shared data. Anything off about a field falls back to the standard brush for it. */
 export function sanitizePreset(raw: unknown, id: string): BrushPreset | null {
@@ -81,11 +141,28 @@ export function sanitizePreset(raw: unknown, id: string): BrushPreset | null {
   if (r.tool === 'pixel') {
     const pixel = cleanSpec(r.pixel);
     if (!pixel) return null;
-    return group ? { id, name, tool: 'pixel', brush: DEFAULT_BRUSH, pixel, group } : { id, name, tool: 'pixel', brush: DEFAULT_BRUSH, pixel };
+    const mate = r.pair === undefined ? undefined : brushFrom(r.pair, DEFAULT_BRUSH);
+    const one: BrushPreset = { id, name, tool: 'pixel', brush: DEFAULT_BRUSH, pixel };
+    if (mate) one.pair = mate;
+    if (group) one.group = group;
+    return one;
   }
   const brush = brushFrom(r.brush, DEFAULT_BRUSH);
   if (!brush) return null;
-  return group ? { id, name, tool: 'brush', brush, group } : { id, name, tool: 'brush', brush };
+  const mate = r.pair === undefined ? undefined : cleanSpec(r.pair);
+  const one: BrushPreset = { id, name, tool: 'brush', brush };
+  if (mate) one.pair = mate;
+  if (group) one.group = group;
+  return one;
+}
+
+/** A preset as it is written to storage or a file: its own half, the other half when it was made, and its group. */
+export function presetBody(p: BrushPreset, withId = false): Record<string, unknown> {
+  const own = p.tool === 'pixel' ? { name: p.name, tool: p.tool, pixel: p.pixel } : { name: p.name, tool: p.tool, brush: p.brush };
+  const body: Record<string, unknown> = withId ? { id: p.id, ...own } : own;
+  if (p.pair) body.pair = p.pair;
+  if (p.group) body.group = p.group;
+  return body;
 }
 
 /** Reads a saved list. Damaged entries are left out, names are made unique, and the list is held to its limit. */
@@ -156,12 +233,13 @@ export function movePreset(list: readonly BrushPreset[], id: string, group: stri
 
 /** Puts a brush into a saved one, keeping its name. Starters are left alone. */
 export function updatePreset(list: readonly BrushPreset[], id: string, brush: BrushSettings): BrushPreset[] {
-  return list.map((p) => (p.id === id && p.tool === 'brush' ? { ...p, brush: { ...brush } } : p));
+  // A brush made as a pixel brush keeps this as the vector half it now has made.
+  return list.map((p) => (p.id === id ? (p.tool === 'brush' ? { ...p, brush: { ...brush } } : { ...p, pair: { ...brush } }) : p));
 }
 
 /** Puts a pixel brush into a saved one, keeping its name. */
 export function updatePixelPreset(list: readonly BrushPreset[], id: string, pixel: PixelSpec): BrushPreset[] {
-  return list.map((p) => (p.id === id && p.tool === 'pixel' ? { ...p, pixel } : p));
+  return list.map((p) => (p.id === id ? (p.tool === 'pixel' ? { ...p, pixel } : { ...p, pair: pixel }) : p));
 }
 
 /** Gives a saved brush a new name (a number after it if another has it). Unchanged when the name is empty. */
@@ -179,13 +257,14 @@ export function deletePreset(list: readonly BrushPreset[], id: string): BrushPre
 
 /** The brush the one in use matches, if any (yours first, so a copy of a starter reads as yours). */
 export function matchPreset(brush: BrushSettings, mine: readonly BrushPreset[]): BrushPreset | undefined {
-  return mine.find((p) => p.tool === 'brush' && sameBrush(p.brush, brush)) ?? STARTERS.find((p) => sameBrush(p.brush, brush));
+  const is = (p: BrushPreset) => !!madeVector(p) && sameBrush(vectorHalf(p), brush);
+  return mine.find(is) ?? LISTED_STARTERS.find(is);
 }
 
 /** The pixel brush the one in use matches, if any (yours first). */
 export function matchPixelPreset(spec: PixelSpec, mine: readonly BrushPreset[]): BrushPreset | undefined {
-  const is = (p: BrushPreset) => p.tool === 'pixel' && !!p.pixel && sameSpec(p.pixel, spec);
-  return mine.find(is) ?? PIXEL_STARTERS.find(is);
+  const is = (p: BrushPreset) => !!madePixel(p) && sameSpec(pixelHalf(p), spec);
+  return mine.find(is) ?? LISTED_STARTERS.find(is);
 }
 
 export interface PresetState {
@@ -197,8 +276,8 @@ export interface PresetState {
 
 /** Which brush is lit, and whether you have changed it since picking it. `pickedId` is the last one picked this session. */
 export function presetState(brush: BrushSettings, mine: readonly BrushPreset[], pickedId: string | null): PresetState {
-  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId && p.tool === 'brush') : undefined;
-  if (picked) return { activeId: picked.id, changed: !sameBrush(picked.brush, brush) };
+  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId) : undefined;
+  if (picked) return { activeId: picked.id, changed: !sameBrush(vectorHalf(picked), brush) };
   const m = matchPreset(brush, mine);
   return { activeId: m ? m.id : null, changed: false };
 }
@@ -207,8 +286,8 @@ export function presetState(brush: BrushSettings, mine: readonly BrushPreset[], 
 export function pixelPresetState(spec: PixelSpec | null, mine: readonly BrushPreset[], pickedId: string | null): PresetState {
   if (!spec) return { activeId: null, changed: false };
   // The one you picked only stays lit while you are still on its tool (a charcoal brush is not lit on the airbrush).
-  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId && p.tool === 'pixel' && !!p.pixel && specTool(p.pixel) === specTool(spec)) : undefined;
-  if (picked?.pixel) return { activeId: picked.id, changed: !sameSpec(picked.pixel, spec) };
+  const picked = pickedId ? allPresets(mine).find((p) => p.id === pickedId && specTool(pixelHalf(p)) === specTool(spec)) : undefined;
+  if (picked) return { activeId: picked.id, changed: !sameSpec(pixelHalf(picked), spec) };
   const m = matchPixelPreset(spec, mine);
   return { activeId: m ? m.id : null, changed: false };
 }
@@ -227,10 +306,7 @@ export function stepPreset(all: readonly BrushPreset[], activeId: string | null,
 export function brushesToText(list: readonly BrushPreset[]): string {
   const presets = list
     .filter((p) => !p.builtin)
-    .map((p) => {
-      const body = p.tool === 'pixel' ? { name: p.name, tool: p.tool, pixel: p.pixel } : { name: p.name, tool: p.tool, brush: p.brush };
-      return p.group ? { ...body, group: p.group } : body;
-    });
+    .map((p) => presetBody(p));
   return JSON.stringify({ format: BRUSHES_FORMAT, version: BRUSHES_VERSION, presets }, null, 2);
 }
 
@@ -243,6 +319,8 @@ export interface SharedBrush {
   brush: BrushSettings;
   group?: string;
   pixel?: PixelSpec;
+  /** The other half, when it was made (see BrushPreset.pair). */
+  pair?: PixelSpec | BrushSettings;
 }
 
 export type ParseResult = { ok: true; presets: SharedBrush[]; skipped: number } | { ok: false; error: string };
@@ -268,6 +346,7 @@ export function parseBrushesText(text: unknown): ParseResult {
     if (p) {
       const one: SharedBrush = { name: p.name, brush: p.brush };
       if (p.pixel) one.pixel = p.pixel;
+      if (p.pair) one.pair = p.pair;
       if (p.group) one.group = p.group;
       presets.push(one);
     } else skipped++;
@@ -284,6 +363,7 @@ export function addShared(list: readonly BrushPreset[], incoming: readonly Share
     if (out.length >= MAX_PRESETS) break;
     const p: BrushPreset = { id: newId(), name: uniqueName(it.name, allPresets(out).map((p) => p.name)), tool: it.pixel ? 'pixel' : 'brush', brush: { ...it.brush } };
     if (it.pixel) p.pixel = it.pixel;
+    if (it.pair) p.pair = it.pair;
     setGroup(p, it.group);
     out.push(p);
     added++;

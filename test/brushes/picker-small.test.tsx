@@ -21,6 +21,12 @@ vi.mock('../../src/brushes/starters', async (original) => {
   return { ...o, STARTERS: four };
 });
 
+// The one list holds the pixel starters too, so they are cut away as well.
+vi.mock('../../src/brushes/pixelStarters', async (original) => {
+  const o = await original<typeof import('../../src/brushes/pixelStarters')>();
+  return { ...o, PIXEL_STARTERS: [] };
+});
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let host: HTMLElement;

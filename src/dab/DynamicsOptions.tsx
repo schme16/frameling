@@ -1,6 +1,7 @@
 // The pixel brush options for what moves a dab (pen, speed, fade), colour that changes along the stroke, and texture
 // (paper grain and a dual tip). Each is a fold under the main options so the first look stays small. Words are plain,
 // with the paint program's term second.
+import { pixelHalf } from '../brushes/model';
 import { brushesVersion, useBrushPresets } from '../brushes/presets';
 import { pixelPartsOf } from '../brushes/pixelParts';
 import { resetPaper, savedPixelBrush } from '../brushes/partsActions';
@@ -162,7 +163,7 @@ export function PaperSection() {
   const g = useDab((x) => x.grain);
   useBrushPresets(brushesVersion);
   const was = savedPixelBrush();
-  const changed = pixelPartsOf(was?.pixel, currentSpec()).paper;
+  const changed = pixelPartsOf(was ? pixelHalf(was) : undefined, currentSpec()).paper;
   return (
     <PaperGroup
       part={{ saved: !!was, changed, reset: () => void resetPaper() }}

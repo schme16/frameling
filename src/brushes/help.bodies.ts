@@ -1,83 +1,67 @@
 // The words of the help topics in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'brush-parts': `A **brush** is a bundle of settings you pick in one click. Inside it are a **tip** (what the line is made of), for chalk and charcoal a **stick** (what you are drawing with), and the size, smoothing and pointy ends. **Paper** is the sheet's, unless the brush keeps its own.
+  'brush-parts': `A **brush** is a bundle of settings you pick in one click: a **tip** (what the line is made of), for chalk and charcoal a **stick** (what you draw with), and the size, smoothing and pointy ends. **Paper** is the sheet's, unless the brush keeps its own.
 
 **The four, in one line each:**
 - **Brush:** the whole bundle, like Sketch pencil or Ink. Picking one replaces the tip, the stick and the rest.
-- **Tip:** what the line is made of: smooth, a pen nib, bristles, chalk, charcoal, watercolour or stamps. Picking one gives the brush that tip with its usual settings.
-- **Stick:** only for the **Chalk** and **Charcoal** tips, and only while **Catch on paper** is on. It is vine charcoal, chalk, pastel, crayon or a pencil, and it decides how the line catches on the paper.
-- **Paper:** the sheet's grain, from **Smooth** to **Rough**. Every tool that catches on paper uses the same one, unless a brush keeps its own. Picking a brush leaves the sheet's alone.
+- **Tip:** smooth, a pen nib, bristles, chalk, charcoal, watercolour or stamps. Picking one gives the brush that tip with its usual settings.
+- **Stick:** only for the **Chalk** and **Charcoal** tips, and only while **Catch on paper** is on. It decides how the line catches on the paper.
+- **Paper:** the sheet's grain, from **Smooth** to **Rough**. Every tool that catches on paper uses the same one, unless a brush keeps its own.
 
-**Parts of this brush:** under the **Brush** picker, **Tip** and **Stick** each say **as it comes** or **changed**, and so does **Paper** for a brush that keeps its own. **Changed** has its own small arrow that puts that one part back, and **Back to how it came** puts all of it back. The same words are in the palette (**Ctrl+K**): "back to how the brush came", "put the tip back", "put the stick back", "put the paper back". The pixel brushes have the same box: the **Pixel brush** has a **Tip** (**Round**, **Square** or **Picture**) and **Chalk and charcoal** a **Stick**.
+**Parts of this brush:** under the **Brush** picker, **Tip** and **Stick** each say **as it comes** or **changed**, and so does **Paper** for a brush that keeps its own. **Changed** has its own small arrow that puts that one part back, and **Back to how it came** puts all of it back. The palette (**Ctrl+K**) has the same. The **Pixel brush** has a **Tip** and **Chalk and charcoal** a **Stick** in the same box.
+
+**A brush follows you from layer to layer.** Pick Ink on a vector layer, move to a pixel layer and the same brush is picked, drawn as pixels. Each kind of layer keeps its own changes: change the size on a vector layer, hop to a pixel layer and back, and it is still changed, still with its **Back to how it came**. What the other kind can't draw is said under the picker, greyed, and kept.
 
 **Why two parts change at once:** picking a **Chalk** tip also gives the brush the **Chalk** stick, so both say **changed**. Pick the stick you want afterwards and only the tip stays marked.
 
-**See what changed:** when you change the brush, the tip, the stick or the paper, the preview at the top shows a tag with what changed, like **Tip: Chalk**, and the row you used lights up for a moment. With **Reduce motion** on, the tag still shows and nothing pulses.
-
-**What the pictures show:** each tip is drawn as a plain stroke, each stick as a stroke at its own width on the smoothest paper, each paper as a swatch of its grain. Only the preview at the top shows what you will really get.
+**See what changed:** the preview shows a tag with what changed, like **Tip: Chalk**, and the row you used lights up for a moment.
 
 **Good to know:**
 - The marks survive closing Frameling, as long as the brush was a saved one.
-- If **Changing a saved brush** is set to save every change, a brush of yours never shows as changed, because it is saved as you go. The ones that come with Frameling always can.
 - Size is part of the brush, so moving it also shows **Back to how it came**.
 
 Next: [Saved brushes](help:brush-presets), [Brush tips](help:brush-tips), [Paper](help:paper).`,
 
   'brush-presets': `A **saved brush** is the brush you like, kept under a name. Ink for outlines, a soft marker for shading, a thin pencil for sketching: one click to swap, instead of moving four sliders back and forth.
 
-**Pick one:** choose the **Brush** tool (**B**). The **Brush** picker, under the preview, shows the brush you are using, with a stroke of it. Click it and your saved brushes drop down, each with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. With lots of brushes, see **The brush picker**.
+**Pick one:** choose the **Brush** tool (**B**). The **Brush** picker, under the preview, drops down every brush with a stroke across it. Click one and the size, smoothing, pressure and pointy ends all change at once. A hundred come with Frameling, and they never change, so you can't spoil them.
 
-**Ready to use:** over sixty brushes come with Frameling, in fourteen groups, from **Pencils**, **Pens** and **Markers** to **Bristles**, **Along the line** and **Edged**. They never change, so you can't spoil them. Pixel layers have most of them too.
-
-**Soft edges:** airbrush, highlighter, soft brush and smudge are [pixel tools](help:soft-paint), since a vector line can't fade.
+**One brush, on every layer:** the brush you pick stays picked when you go from a pixel layer to a vector layer and back. It draws vectors on one and pixels on the other, and the picker lists the same brushes on both. A brush made for one kind is drawn as close as the other can, and a line under the picker says what is kept but not drawn ("Dual tip is kept, but vectors don't draw it"), with those controls greyed. Go back and the brush is exactly as it was. When a swap would look very different, Frameling asks once and remembers.
 
 **Save your own:**
 1. Set the brush how you like it.
 2. Press **Save as...**, under **Size** (or **Ctrl+K** and type "save this brush").
 3. Give it a name, and a group if you want one, and press **Enter**.
 
-**Changed it afterwards?** The **Tip** and **Stick** under **Parts of this brush** say **changed**. Press **Back to how it came** to go back, or **Update** to keep the change. See [A brush, its tip, its stick and its paper](help:brush-parts).
+It is kept as the kind of brush you were on, and the other kind is worked out from it. Pick one of yours to **Rename** it or **Delete** it (there is an **Undo**).
 
-**Rather it saved every change by itself?** Open **Preferences, Behaviour** and set **Changing a saved brush** to **Yes, save every change**.
+**Changed it afterwards?** The **Tip** and **Stick** under **Parts of this brush** say **changed**. Press **Back to how it came** to go back, or **Update** to keep the change. See [A brush, its tip, its stick and its paper](help:brush-parts). To keep every change by itself, set **Changing a saved brush** in **Preferences, Behaviour**.
 
-**Rename, move or delete:** pick one of yours, then press **Rename** (you can change its group there too) or **Delete**. Delete has an **Undo** on the message that appears.
-
-**From the keyboard:** **Alt+Down** moves to the next brush and **Alt+Up** to the one before, and **Alt+P** opens the picker. In the command palette, every brush has a command called **Brush: Ink** and so on, which also switches to the Brush tool for you.
-
-**Share them:** open **Share your brushes**, under **Save as...**. **Save as a file** and **Copy as text** make something you can send a friend (or a plugin). **Add from a file...** and **Paste from text** add ones you were sent, under new names if yours clash. The starters aren't included, because everyone has them. Your saved brushes also go in the settings backup in **Preferences, General**.
+**Share them:** **Share your brushes**, under **Save as...**, saves a file or copies text to send a friend, and adds ones you were sent.
 
 **Good to know:**
-- A saved brush holds the size, smoothing, pressure, pointy ends, end caps and the [tip](help:brush-tips) (chalk, stamps, a shape you made and so on). The colour, the mirror and your pen curves stay as they are.
-- Saving under a name you already used replaces that brush.
-- You can keep up to 1000 of your own, in groups if you like (type a group name when you save).
-- Pixel brushes live in this picker too: see the [Pixel brush](help:pixel-brush).
+- A saved brush holds the size, smoothing, pressure, pointy ends and the [tip](help:brush-tips). The colour, the mirror and your pen curves stay as they are.
+- **Show what this layer cannot draw of the brush**, in **Ctrl+K**, opens the greyed controls. **Alt+Down** and **Alt+Up** step through the brushes.
 
 help:brush-picker help:brush-tips help:tool-options help:remembered-settings help:pen-tablet help:brush-import`,
-  'brush-picker': `The **brush picker** is the button under the preview, at the top of the Brush options. Click it and every brush you have drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
+  'brush-picker': `The **brush picker** is the button under the preview, at the top of the Brush options. Click it and every brush drops down with a stroke across it, so you pick by what a brush *draws*, not only by its name. It works the same with forty brushes as with four hundred.
+
+**The same list on every layer:** a pixel layer and a vector layer show the same brushes, each stroke drawn the way that kind of layer draws it. A brush made for the other kind is still there, drawn as close as this kind can (hover a row to see which). Pairs show once. See [Saved brushes](help:brush-presets).
 
 **Open it:** click the button, press **Alt+P**, or press **Ctrl+K** and type "brush picker". Pick a brush and it closes. **Esc** or a click away closes it without picking.
 
-**What you see:** **Size** and **Smoothing** at the top, so you can nudge a brush while you look. Each row has a small picture of the brush's **real tip** (chalk shows its grain, watercolour its wash, a stamp its shapes) with the size under it, a long **stroke** and its **name**. The brush you are using is highlighted and its stroke follows the sliders. Strokes are drawn in a colour that stands out against the panel, in every theme. **Row size** at the bottom makes the rows taller or smaller.
+**What you see:** **Size** and **Smoothing** at the top, so you can nudge a brush while you look. Each row has the brush's **real tip** with its size under it, a long **stroke** and its **name**. The brush you are using is highlighted and follows the sliders. **Row size** at the bottom makes the rows taller or smaller.
 
-**Search, groups and favourites** are always here, because Frameling comes with over sixty brushes.
+**Find one:**
+- **Search.** Type a word and the list becomes the matches, each with its group. Every word has to match, in the name or the group.
+- **Groups.** **My brushes** is yours, then the groups that come with Frameling, then a brush pack or your own. Press a group's name to open or fold it. The button beside the search box folds or opens them all.
+- **Favourites and Recent.** Press the star on a row to keep a brush in Favourites at the top. Recent is the last few you used.
 
-- **Search.** Type a word and the list becomes the matches, each with its group. Every word has to match, in the name or the group. Typing always goes to the search box, so just start typing.
-- **Groups.** **My brushes** is yours. Below it are the groups that come with Frameling, then a brush pack or your own groups. Press a group's name to open or fold it. Only open groups are drawn, which keeps a big library quick. A small dot says your brush is inside. The button beside the search box folds or opens every group.
-- **Favourites and Recent.** Press the star on a row to keep a brush in Favourites at the top. Recent is the last few brushes you used.
+**Make a group:** press **Save as...** and type a group name under the name. To move a brush of yours, pick it and press **Rename**. Leave the group empty and it goes in **My brushes**.
 
-**Make a group:** press **Save as...** and type a group name under the name. To move a brush of yours, pick it and press **Rename**. Leave the group empty and it goes in **My brushes**, which is where brushes saved before groups existed are.
+**Two columns:** the button beside the search box switches between one wide column and two denser ones. Drag the small corner at the bottom left to make the list bigger.
 
-**Two columns:** the button beside the search box switches between one wide column and two denser ones. Frameling remembers, and you can also set it in **Preferences, Behaviour**, under **How the brush picker lists brushes**.
-
-**Bigger list:** drag the small corner at the bottom left of the panel. It stays that size next time.
-
-**From the keyboard:**
-- **Up** and **Down** move through the rows, **Page Up** and **Page Down** jump.
-- **Enter** picks the highlighted brush (on a group's name, it opens or folds it). **Right** and **Left** open and fold a group.
-- **Ctrl+D** stars or un-stars the highlighted brush. Or run **Add the brush to Favourites** from **Ctrl+K**.
-- **Esc** closes it and puts you back on the button.
-
-You can keep up to 1000 brushes of your own. Brushes from a friend or a brush pack keep their group when you add them.
+**From the keyboard:** **Up** and **Down** move through the rows, **Enter** picks (on a group's name, it opens or folds it), **Ctrl+D** stars a brush and **Esc** closes the list.
 
 help:brush-presets help:brush-tips help:tool-options`,
   'brush-tips': `A **tip** is what a brush line is made of. **Plain** is the smooth line you know. The others give your drawing a hand-made feel: dusty chalk, rough charcoal, a watercolour wash with a darker edge, or a shape repeated along the line. Chalk and charcoal catch on paper like the real thing, and stay lines you can reshape.
@@ -136,28 +120,24 @@ help:brush-tips help:brush-presets help:brush-picker help:exporting`,
   'brush-import': `Brushes made in **Photoshop** (**.abr**), **GIMP** (**.gbr**, **.gih**, **.vbr**), **Krita** (**.kpp**, **.bundle**) and **Procreate** (**.brush**, **.brushset**) come into your own brushes, so you can use the free packs people share. Frameling shows you what is in the file first, and says what did not come across.
 
 **Bring some in:**
-1. **Tools > Saved brushes > Add brushes from a file...** (or search the command palette for **Add brushes**).
+1. **Tools > Saved brushes > Add brushes from a file...** (or search the palette for **Add brushes**).
 2. Pick the file. A window lists every brush in it with a little picture of its tip.
 3. Untick any you don't want, name the group they go in, and press **Add**.
 
-They land in your [brush picker](help:brush-picker) under the set's name, and are kept with your other saved brushes.
+They land in your [brush picker](help:brush-picker) under the set's name.
 
-**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what changed. **Only the whole ones** ticks just those that lost nothing, handy for a big set.
+**On every layer:** the picker lists the same brushes on a vector layer. There an imported brush is drawn as a vector brush, as close as vectors can (a picture tip becomes a stamp), and what vectors can't draw, like a dual tip or wet paint, is said in one line under the picker, greyed and kept. Go back to a pixel layer and nothing was lost.
 
-**What comes across:**
-- The tip: a round or square shape, or a picture, shrunk to fit 32 by 32 pixels with its soft shading kept.
-- Size, hardness, angle, roundness, spacing and scatter.
-- Pen controls (tilt, speed, direction, twist) for size, flow, opacity and angle, with each curve's bend (a long one is thinned to 8 points, and says so), and jitter.
-- A texture becomes one of the [papers](help:pixel-brush-texture), and a Photoshop dual brush with a textured tip becomes a field of dots. Both say so.
+**Which came in whole:** each brush says **Came in whole**, **Came in, slightly changed** or **Came in, without some settings**, and lists what changed. **Only the whole ones** ticks just those that lost nothing.
 
-**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, count, a pipe of several pictures (Frameling takes the first), stylus wheel, and, from Krita, smudging, airbrush mode, masking brushes and every engine that isn't the pixel brush. From Procreate: glaze, blend modes, and its own tips and papers, which aren't in the file: the tip comes as a plain round one, and the paper as the nearest of Frameling's own when the name says its tooth (charcoal, canvas), or none when it doesn't. Each is named in the window.
+**What comes across:** the tip (a round or square shape, or a picture shrunk to fit 32 by 32 with its soft shading kept), size, hardness, angle, roundness, spacing, scatter, jitter, and pen controls (tilt, speed, direction, twist) for size, flow, opacity and angle. A texture becomes one of the [papers](help:pixel-brush-texture).
+
+**What doesn't:** bristle and airbrush tips (they come as round), colour dynamics, wet edges, noise, build-up, brush groups, and from Krita smudging and every engine that isn't the pixel brush. From Procreate: glaze, blend modes, and its own tips and papers, which aren't in the file, so the tip comes as a plain round one. Each is named in the window.
 
 **Good to know:**
 - A Photoshop set, a Krita **.bundle** or a Procreate **.brushset** is one file with many brushes. A GIMP file, a Krita **.kpp** or a Procreate **.brush** is one brush.
-- Procreate doesn't say how big its brushes are, so the size is measured off its own picture of the stroke, which every brush file carries: a brush arrives looking like its picture. Change it with the size slider. Only its paint version comes across, not smudge and erase. A dual brush is laid along the line.
 - A lone Krita **.kpp** with a picture tip can't come in, because the picture isn't inside it. Make a bundle in Krita's **Manage Resources** window instead.
-- A damaged file, or one that isn't a brush file, is refused with a reason. Clip Studio Paint and Affinity brushes can't be read yet.
-- Open the brush in the [Pixel brush](help:pixel-brush) options afterwards to change anything, then **Save as...** to keep your version.
+- A damaged file, or one that isn't a brush file, is refused with a reason.
 
 help:brush-presets help:brush-picker help:pixel-brush-dynamics`,
 };

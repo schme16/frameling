@@ -2,6 +2,7 @@
 // this brush. Each part says "as it comes" or "changed" and has its own small reset; one button puts the whole brush back.
 // Paper is the sheet's unless this brush keeps its own, so it sits beside them (with its own small status when it is the brush's). After a change the preview carries a tag naming what changed
 // and the rows that changed light up for a couple of seconds (flash.ts).
+import { pixelHalf, vectorHalf } from './model';
 import type { ReactNode } from 'react';
 import { useStore } from '../core/store';
 import { BrushPicker } from './BrushPicker';
@@ -126,7 +127,7 @@ export function PartsBox({ stick, stickOff, paperBelow }: { stick: boolean; stic
   const live = useStore((s) => s.ui.brush);
   useBrushPresets(brushesVersion);
   const was = savedBrush();
-  return <PartsView parts={partsOf(was?.brush, live)} was={was?.name} tip stick={{ shown: stick, off: stickOff }} footer={paperBelow ? 'Paper is the sheet’s, unless this brush keeps its own. Picking a brush leaves the sheet’s as it is.' : null} />;
+  return <PartsView parts={partsOf(was ? vectorHalf(was) : undefined, live)} was={was?.name} tip stick={{ shown: stick, off: stickOff }} footer={paperBelow ? 'Paper is the sheet’s, unless this brush keeps its own. Picking a brush leaves the sheet’s as it is.' : null} />;
 }
 
 /**
@@ -139,5 +140,5 @@ export function PixelPartsBox({ tip, stick }: { tip: boolean; stick: boolean }) 
   useBrushPresets(brushesVersion);
   const was = savedPixelBrush();
   if (!tip && !stick) return null;
-  return <PartsView parts={pixelPartsOf(was?.pixel, currentSpec())} was={was?.name} tip={tip} stick={{ shown: stick, off: false }} footer={null} />;
+  return <PartsView parts={pixelPartsOf(was ? pixelHalf(was) : undefined, currentSpec())} was={was?.name} tip={tip} stick={{ shown: stick, off: false }} footer={null} />;
 }

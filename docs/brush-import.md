@@ -5,6 +5,11 @@ brush library. The command is **Add brushes from a file...** (`brush.addFile`, u
 palette); it takes Frameling's own `.json` brush files too. Code: `src/brushes/import/`, the library side
 `addImportedBrushes` in `src/brushes/presets.ts`.
 
+An imported brush is a pixel brush made on the pixel side only, and the brush list is one list for both kinds of layer, so it is on a vector
+layer too: there it is drawn through `toVector` (`src/brushes/translate.ts`; a picture tip becomes a stamp traced from the picture), and
+what a vector line cannot draw of it (a dual tip, wet paint, flow, a blend mode...) is said in one line under the Brush picker, with the controls greyed
+(`src/brushes/Kept.tsx`). The importers' reading of files is unchanged; only where the result lands is new.
+
 ## What is read
 
 | Format | App | State | Read from |

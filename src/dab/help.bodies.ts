@@ -1,27 +1,27 @@
 // The words of the help topic in help.ts, kept apart so they load only when Help is opened (see src/core/helpBodies.ts).
 export const bodies: Record<string, string> = {
-  'pixel-brush': `The **Pixel brush** draws a line as a row of **dabs**: one small stamp after another along the way you drag. You shape the stamp (its **tip**), how far apart the stamps go (the **spacing**), and whether they wander off the line (**scatter**). It works on **pixel layers**.
+  'pixel-brush': `The **Pixel brush** draws a line as a row of **dabs**: one small stamp after another along the way you drag. You shape the stamp (its **tip**), how far apart the stamps go (the **spacing**), and whether they wander off the line (**scatter**). It draws pixels wherever you are.
 
-**Draw with it:** pick the **Pixel brush** from the **Brush** button's pull-out (**Alt+Shift+N**), choose a colour and drag. Or open the [brush picker](help:brush-picker) under the preview and pick one that comes ready. The options read like the Brush's: see [parts of a brush](help:brush-parts).
+**Draw with it:** pick the **Pixel brush** from the **Brush** button's pull-out (**Alt+Shift+N**), choose a colour and drag. On a vector layer your stroke goes on a pixel layer next to it, made if need be. Or pick a ready one in the [brush picker](help:brush-picker). The options read like the Brush's ([parts of a brush](help:brush-parts)).
 
-**The Brush (B)** has these options on a pixel layer too, plus **Pixel perfect**, and shares this brush. A plain hard brush it draws as a pencil (**Shift** lines work); the Pixel brush lays it as dabs.
+**The Brush (B)** on a pixel layer shows these same options, plus **Pixel perfect**, and shares this brush. It draws a plain hard brush as a pencil (**Shift** lines work); the Pixel brush always lays dabs.
+
+**One brush on every layer:** the brush you pick stays picked when you move to a vector layer and back, and the picker lists the same brushes on both. A vector brush is drawn here as close as pixels can, and a line under the picker says what is kept but not drawn. See [saved brushes](help:brush-presets).
 
 **The things you reach for:**
-- **Tip:** **Round**, **Square**, or **Picture**. A picture tip is a little drawing of your own: press **Draw a picture...** to draw it on a grid, or start from a picture file or your selection. See [draw your own picture tip](help:pixel-brush-picture).
+- **Tip:** **Round**, **Square**, or a **Picture** of your own: see [draw your own picture tip](help:pixel-brush-picture).
 - **Size:** how many pixels across.
-- **Spacing:** how far apart the dabs go, as a share of the size. Low is a smooth solid line, 100% is side by side, more leaves gaps like a dotted line. This one setting does most of what makes a brush feel like a brush.
-- **Edges:** **Sharp pixels** or **Smooth**. Sharp is the pixel art way: every pixel is all or nothing. Smooth fades the edge with see-through pixels, like a painting program.
-- **Hardness:** how firm the edge is. With sharp pixels a soft edge becomes a pattern of dots.
+- **Spacing:** how far apart the dabs go, as a share of the size. Low is a smooth solid line, 100% is side by side, more leaves gaps like a dotted line.
+- **Edges:** **Sharp pixels**, the pixel art way, where every pixel is all or nothing, or **Smooth**, which fades the edge.
+- **Hardness:** how firm the edge is. With sharp pixels a soft edge is a pattern of dots.
 
-**Under Shape, scatter and flow:** **Angle** and **Roundness** turn and flatten the tip (a flat square at an angle is a chisel), **Turn with the line** points it the way you draw, **Scatter**, **Size jitter** and **Angle jitter** vary each dab. **Flow** is how much paint one dab lays down, so it builds up as dabs overlap. **Opacity** is the most any pixel can get in one stroke. Flow is how fast it builds, opacity is where it stops.
+**Under Shape, scatter and flow:** **Angle** and **Roundness** turn and flatten the tip (a flat square at an angle is a chisel), **Scatter** and the jitters vary each dab, **Flow** is how much paint a dab lays down, and **Opacity** is the most any pixel gets.
 
-**Further folds, each with its own help:** [Pen, speed and fade](help:pixel-brush-dynamics) lets the pen, your speed or a fade-out change each dab, and **Colour changes** lets the colour wander or smear. The **Paper** box ([paper and dual tip](help:pixel-brush-texture)) gives the brush a paper to catch on, and **Dual tip** adds a second tip of dots.
+**Further folds:** [Pen, speed and fade](help:pixel-brush-dynamics), the **Paper** box ([paper and dual tip](help:pixel-brush-texture)) and **Dual tip**. Keep brushes with **Save as...** in the picker.
 
-**Keep your brushes:** press **Save as...** in the picker (see [saved brushes](help:brush-presets)).
+**Pixel art stays pixel art.** With sharp pixels nothing is see-through, and a [locked palette](help:palette-lock) dithers a smooth edge into colours you already have. It follows [mirror drawing](help:pixel-mirror).
 
-**Pixel art stays pixel art.** With sharp pixels nothing is see-through. If the layer has its [palette locked](help:palette-lock), a smooth edge is dithered into colours you already have, and the options say so. It follows [mirror drawing](help:pixel-mirror).
-
-For soft fades try [soft paint](help:soft-paint); for paper grain, [chalk and charcoal](help:chalk-charcoal).`,
+For soft fades try [soft paint](help:soft-paint), for paper grain [chalk and charcoal](help:chalk-charcoal).`,
   'pixel-brush-picture': `A **picture tip** is a little drawing of your own that the [Pixel brush](help:pixel-brush) stamps along the line. The editor is where you make one, or change the one you have.
 
 **Open it:** pick the Pixel brush, set **Tip** to **Picture**, and press **Draw a picture...** (or **Edit the picture...** when you have one). Or open the command palette and type **picture tip**.
