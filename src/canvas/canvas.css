@@ -516,6 +516,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Room for the live box's ring and the corner buttons, which reach a little past the boxes. */
+  padding: 6px 0 4px 6px;
 }
 .cv-wells-stack {
   position: relative;
@@ -549,10 +551,14 @@
   background: var(--panel);
   box-shadow: inset 0 0 0 9px var(--well, transparent), inset 0 0 0 10px color-mix(in srgb, var(--text) 25%, transparent);
 }
+/* The box you are changing is lifted: a bold ring in the chosen colour with a gap of panel colour inside it, a little
+   shadow, and a touch bigger. The other box stays flat, so which is live reads at a glance and not by a thin outline. */
 .cv-well.is-front {
   z-index: 1;
-  outline: 2px solid var(--chosen-bg);
-  outline-offset: 1px;
+  outline: 3px solid var(--chosen-bg);
+  outline-offset: 2px;
+  transform: scale(1.05);
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.35));
 }
 .cv-well:hover {
   transform: scale(1.04);
@@ -570,11 +576,6 @@
 .cv-wells-stack[data-see-through='stroke'] .cv-well-fill {
   clip-path: polygon(0 0, 100% 0, 100% 20px, 20px 20px, 20px 100%, 0 100%);
 }
-.cv-wells-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
 .cv-wells-btn {
   width: 24px;
   height: 22px;
@@ -589,20 +590,6 @@
 .cv-wells-btn:hover {
   background: var(--hover-bg);
 }
-.cv-wells-mini {
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(135deg, #fff 0 50%, #1d1b26 50%);
-  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
-  border-radius: 2px;
-}
-.cv-wells-none {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
-  border-radius: 2px;
-  background: linear-gradient(to top right, transparent calc(50% - 1px), var(--danger) calc(50% - 1px), var(--danger) calc(50% + 1px), transparent calc(50% + 1px));
-}
 .cv-wells-text {
   display: flex;
   flex-direction: column;
@@ -612,6 +599,132 @@
 .cv-wells-text span {
   color: var(--muted);
   font-size: var(--fs-small);
+}
+
+/* The swap arrow (top right) and the default pair (bottom left) in the corners the overlapped boxes leave free. What is
+   drawn is small, but the button is 26px square and reaches out past the corner into the space round the boxes, so it is
+   easy to hit. They sit above the boxes and keep clear of the live box's ring. */
+.cv-corner {
+  position: absolute;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.cv-corner:hover {
+  background: var(--hover-bg);
+}
+.cv-corner-swap {
+  right: -9px;
+  top: -9px;
+}
+.cv-corner-default {
+  left: -9px;
+  bottom: -9px;
+}
+/* The default pair: a white square behind, a black one in front. */
+.cv-pair {
+  position: relative;
+  width: 17px;
+  height: 17px;
+}
+.cv-pair::before,
+.cv-pair::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 55%, transparent);
+  border-radius: 2px;
+}
+.cv-pair::before {
+  left: 1px;
+  top: 1px;
+  background: #fff;
+}
+.cv-pair::after {
+  right: 1px;
+  bottom: 1px;
+  background: #1d1b26;
+}
+
+/* What the box in front is made of: six picture tiles (five in the Pixel workspace). A grid, so it never becomes a list one
+   to a line; in a narrow panel it goes three to a line. The widths match tilesNarrowBelow() in paintKinds.ts. */
+.cv-kinds {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+.cv-kinds[data-count='5'] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@container cv-panel (max-width: 215px) {
+  .cv-kinds[data-count='5'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container cv-panel (max-width: 259px) {
+  .cv-kinds[data-count='6'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cv-where-count {
+    display: none;
+  }
+  /* The small swatch beside Hex says nothing the box above doesn't: leave it off so the hex digits and the eyedropper fit. */
+  .cv-colors .cp-chip-static {
+    display: none;
+  }
+}
+.cv-kind {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px 0 4px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+  cursor: pointer;
+}
+.cv-kind > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+.cv-kind:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.cv-kind[data-on='true'] {
+  border-color: var(--chosen-bg);
+  box-shadow: inset 0 0 0 1px var(--chosen-bg);
+  color: var(--text);
+}
+.cv-kind-pic {
+  width: 100%;
+  max-width: 34px;
+  height: 22px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.3);
+}
+.cv-kind-pic[data-none='true'] {
+  background: var(--raised) linear-gradient(to top right, transparent calc(50% - 1.5px), var(--danger) calc(50% - 1.5px), var(--danger) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+}
+.cv-colors .cv-field-head .cv-field-value {
+  color: var(--muted);
 }
 
 /* Keep separate / Merge together, at the top of vector tool options. */

@@ -561,8 +561,10 @@
   left: 0;
   top: 0;
   z-index: 1;
-  outline: 2px solid var(--chosen-bg);
-  outline-offset: 1px;
+  /* The same lift as the fill and stroke boxes: a bold ring, a little shadow. */
+  outline: 3px solid var(--chosen-bg);
+  outline-offset: 2px;
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.35));
 }
 .px-well-back {
   right: 0;
@@ -581,13 +583,13 @@
 }
 .px-wells-swap {
   position: absolute;
-  right: 0;
-  top: 0;
+  right: -6px;
+  top: -6px;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);

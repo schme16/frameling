@@ -25,10 +25,10 @@ export const LEFT_OUT_OF_MENUS: Record<string, string> = {
   'view.toolsShowAll': 'Bring them all back, in Change the tools',
   // The gradient kind buttons (Colours panel, and the Gradient tool's options on a pixel layer) hold Angular already,
   // and the Tools menu is at its cap, so the buttons are the way in and the palette keeps the words.
-  'colors.angular': 'The Angular button, in the Colours panel',
+  'colors.angular': 'The Angular picture, in the Colours panel',
   'pixel.gradientAngular': 'Angular, in Shape in the Gradient tool options',
   // Diamond went the same way for the same reason.
-  'colors.diamond': 'The Diamond button, in the Colours panel',
+  'colors.diamond': 'The Diamond picture, in the Colours panel',
   'pixel.gradientDiamond': 'Diamond, in Shape in the Gradient tool options',
   // Grid and perspective settings has the same choices as buttons and a tick.
   'view.gridIso': 'Grid, in Grid and perspective settings',

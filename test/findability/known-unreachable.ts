@@ -34,8 +34,5 @@ export const PALETTE_ONLY: Record<string, string> = {
 /** On a key, and at most in the palette. A key is a way in, but only for somebody who already knows it. */
 export const KEYS_AND_PALETTE_ONLY: Record<string, string> = {
   'colors.toggleWell': 'X switches the fill and stroke box; no button or menu entry names it',
-  'colors.swap': 'Shift+X swaps fill and stroke; no button or menu entry',
-  'colors.reset': 'Shift+D puts the colours back to default; no button or menu entry',
-  'colors.none': '/ sets the colour to none; no button or menu entry',
   'select.lasso': 'Hidden alias for the lasso, only on its key',
 };

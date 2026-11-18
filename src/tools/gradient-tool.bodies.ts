@@ -4,7 +4,7 @@ export const bodies: Record<string, string> = {
 
 ## Giving a shape a gradient
 
-1. In the **Colours** panel, click the fill or stroke box, then pick **Linear** (colours blend along a straight line), **Radial** (colours blend out from the middle in a circle) **Angular** (colours sweep round the middle like a colour wheel, see [Angular gradients](help:gradient-angular)) or **Diamond** (colours step out from the middle in a square turned on its corner, see [Diamond gradients](help:gradient-diamond)).
+1. In the **Colours** panel, click the fill or stroke box, then pick one of the pictures in the row under the boxes: **Linear** (colours blend along a straight line), **Radial** (colours blend out from the middle in a circle) **Angular** (colours sweep round the middle like a colour wheel, see [Angular gradients](help:gradient-angular)) or **Diamond** (colours step out from the middle in a square turned on its corner, see [Diamond gradients](help:gradient-diamond)).
 2. A bar shows the colours. Click a marker under it and pick its colour above, with the picker or a swatch.
 3. Draw a shape, or select shapes first with the Select tool (**V**) to change them.
 
@@ -32,7 +32,7 @@ On a pixel layer the same tool paints a dithered gradient into the pixels instea
 Gradients come along when you export to SVG, PDF and Lottie, and of course in videos, GIFs and sprite sheets. (Lottie has no angular or diamond gradient: see [Angular gradients](help:gradient-angular) and [Diamond gradients](help:gradient-diamond).)`,
   'gradient-angular': `An angular gradient sweeps its colours once round a middle point, like a colour wheel, a pie or the shine on a spinning coin. It is the one for brushed metal, for a pie shape and for a shine that turns. In other programs it is called a **conic** gradient.
 
-**Try it:** pick a shape, click its fill box in the **Colours** panel and choose **Angular**. Or press **Ctrl+K** and type **angular**. The colours run clockwise round the middle of the shape, and the two ends meet where the sweep starts.
+**Try it:** pick a shape, click its fill box in the **Colours** panel and pick the **Angular** picture. Or press **Ctrl+K** and type **angular**. The colours run clockwise round the middle of the shape, and the two ends meet where the sweep starts.
 
 **Move it:** pick the **Gradient** tool (**F**) and drag across the shape. Where you press is the middle, and where you let go is where the sweep starts. Drag the two square ends to fine-tune it.
 
@@ -47,7 +47,7 @@ Gradients come along when you export to SVG, PDF and Lottie, and of course in vi
 Next: [Gradients](help:tool-gradient), [Colours](help:fill-and-stroke).`,
   'gradient-diamond': `A diamond gradient steps its colours out from a middle point in a square turned on its corner. It is the one for a sheen on a flat panel, a soft box of light, a glint on a jewel or a button that catches the light.
 
-**Try it:** pick a shape, click its fill box in the **Colours** panel and choose **Diamond**. Or press **Ctrl+K** and type **diamond**. The first colour sits in the middle of the shape and the last one on the corners of the diamond, and it carries on past them.
+**Try it:** pick a shape, click its fill box in the **Colours** panel and pick the **Diamond** picture. Or press **Ctrl+K** and type **diamond**. The first colour sits in the middle of the shape and the last one on the corners of the diamond, and it carries on past them.
 
 **Move it:** pick the **Gradient** tool (**F**) and drag across the shape. Where you press is the middle, and where you let go is one corner of the diamond, so dragging further makes it bigger. Drag the two square ends to fine-tune it.
 

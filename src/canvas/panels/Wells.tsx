@@ -1,9 +1,10 @@
 // The fill and stroke colour boxes, Illustrator style: the fill is a solid square at the back-left, the stroke a
-// square with a hole at the front-right, and the one you clicked comes to the front. Used in the Colours panel and
-// in the shape tools' options.
+// square with a hole at the front-right, and the one you clicked comes to the front, lifted and ringed. A curved swap
+// arrow sits in the free top corner and the default pair in the bottom one (WellCorners.tsx). Used in the Colours panel
+// and in the shape tools' options; the row of kinds (None, Solid, Linear...) under them is PaintKinds.tsx.
 import { useStore } from '../../core/store';
-import { resetColors, setActiveNone, setActiveWell, swapColors } from '../../tools/wells';
-import { Icon } from '../../ui/icons';
+import { resetColors, setActiveWell, swapColors } from '../../tools/wells';
+import { DefaultCorner, SwapCorner } from './WellCorners';
 import { isMixed, useGradientWells, usePaintView, wellIsNone, wellShows } from '../../tools/gradient-wells';
 import { gradientCss } from '../../core/gradient';
 import { usePaintWells } from '../../tools/pixelWells';
@@ -27,8 +28,10 @@ function Box({ which, color, front }: { which: 'fill' | 'stroke'; color: string 
       className={`cv-well cv-well-${which}${front ? ' is-front' : ''}${color ? '' : ' is-none'}${g || mixed ? ' has-grad' : ''}${mixed ? ' is-mixed' : ''}`}
       style={style}
       aria-pressed={front}
-      aria-label={`${label}: ${color ?? 'none'}${front ? ' (in front)' : ''}`}
-      title={`${label}: ${color ?? 'none'}. Click to bring it to the front (X).`}
+      aria-label={`${label}: ${color ?? 'none'}${front ? ', the one you are changing' : ''}`}
+      title={front ? `${label}: ${color ?? 'none'}. This is the one the picker and swatches change. X switches to the other.` : `${label}: ${color ?? 'none'}. Click to change this one instead (X switches).`}
+      data-control={`${which}-box`}
+      aria-keyshortcuts="X"
       onClick={() => setActiveWell(which)}
     />
   );
@@ -47,21 +50,12 @@ export function Wells() {
   const paintWells = usePaintWells();
   if (paintWells) return <PaintWells />;
   return (
-    <div className="cv-wells" data-quest="color-wells">
-      <div className="cv-wells-stack" data-overlaps data-see-through={seeThrough}>
+    <div className="cv-wells" data-quest="color-wells" data-control="fill-stroke-boxes">
+      <div className="cv-wells-stack" data-overlaps data-see-through={seeThrough} data-live={active} role="group" aria-label="Fill and stroke colours">
         <Box which="fill" color={fill} front={active === 'fill'} />
         <Box which="stroke" color={stroke} front={active === 'stroke'} />
-      </div>
-      <div className="cv-wells-actions">
-        <button type="button" className="cv-wells-btn" title="Swap fill and stroke (Shift+X)" aria-label="Swap fill and stroke colours" onClick={swapColors}>
-          <Icon name="loop" size={14} />
-        </button>
-        <button type="button" className="cv-wells-btn" title="Default colours: theme fill, black stroke (Shift+D)" aria-label="Default colours" onClick={resetColors}>
-          <span className="cv-wells-mini" aria-hidden="true" />
-        </button>
-        <button type="button" className="cv-wells-btn" title={`No ${active} (/)`} aria-label={`Set ${active} to none`} onClick={setActiveNone}>
-          <span className="cv-wells-none" aria-hidden="true" />
-        </button>
+        <SwapCorner onClick={swapColors} />
+        <DefaultCorner onClick={resetColors} />
       </div>
       <div className="cv-wells-text">
         <strong>{active === 'fill' ? 'Fill' : 'Stroke'}</strong>

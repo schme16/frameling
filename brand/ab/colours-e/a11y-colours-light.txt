@@ -1,0 +1,7 @@
+[1233555:1118/103833.194024:ERROR:crypto/nss_util.cc:382] After loading Root Certs, loaded==false: NSS error code: -8018
+ok panel colors (58 elements)
+ok panel colors (selected) (50 elements)
+
+panels: 1 of 31 really checked (the app lists 31)
+
+2 views checked: 0 axe rules broken (0 serious or worse), 0 keyboard problems, 0 not found.
