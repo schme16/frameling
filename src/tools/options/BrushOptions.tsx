@@ -10,12 +10,11 @@ import { DrawModeToggle } from './DrawModeToggle';
 import { setToolSettings, useToolSettings } from '../settings';
 import { MirrorOptions } from './MirrorOptions';
 import { HoldToTidyOptions } from './HoldToTidyOptions';
-import { BrushPresetActions } from '../../brushes/BrushPresetRow';
-import { PreviewFlash } from '../../brushes/PartsOptions';
 import { DRAW_ON_MS, drawnOn, PREVIEW_POINTS, useFlash } from '../../brushes/flash';
 import { reducedMotion } from '../../ui/prefs';
 import { useDry } from '../../dry/settings';
-import { TipOptions } from '../../brushes/TipOptions';
+import { BrushPanel } from '../../brushes/BrushPanel';
+import { VectorParts, VectorPaper, VectorTipControls } from '../../brushes/TipOptions';
 import { PixelStampOptions } from '../../brushes/PixelStampOptions';
 import { readPixelStamp } from '../../brushes/stamps';
 import { typedSize } from '../brushRange';
@@ -91,25 +90,27 @@ function VectorBrushOptions() {
   const pressure = brush.thinning !== 0;
   const range = useBrushRange(false);
   return (
-    <div className="cv-options">
-      <PreviewFlash>
-        <BrushPreview brush={brush} color={color} />
-      </PreviewFlash>
-      <TipOptions />
-      <Slider control="size" label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />
-      <BrushPresetActions revert={false} />
-      <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
-        <DrawModeToggle />
-        <Slider control="smoothing" label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
-        <Toggle control="size-follows" label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
-        {pressure && <Slider control="size-follows-amount" label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
-        <Slider control="taper-start" label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
-        <Slider control="taper-end" label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
-        <HoldToTidyOptions />
-        <PenOptions tool="brush" opacity />
-        <MirrorOptions />
-      </MoreOptions>
-    </div>
+    <BrushPanel
+      side="vector"
+      preview={<BrushPreview brush={brush} color={color} />}
+      parts={<VectorParts />}
+      paper={<VectorPaper />}
+      controls={<VectorTipControls />}
+      size={<Slider control="size" label="Size" value={brush.size} min={range.min} max={range.max} typeMax={range.typedMax} curve format={(v) => `${v}px`} onChange={(v) => setBrush({ size: typedSize(v) })} />}
+      more={
+          <MoreOptions name="brush" command="draw.moreBrushOptions" label="More brush options" hint="Merge shapes together, smoothing, pressure, pointy ends, the stabilizer and mirror drawing.">
+            <DrawModeToggle />
+            <Slider control="smoothing" label="Smoothing" value={Math.round(brush.streamline * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ streamline: v / 100, smoothing: v / 100 })} hint="Higher evens out a shaky hand." />
+            <Toggle control="size-follows" label="Pressure changes thickness" checked={pressure} onChange={(on) => setBrush({ thinning: on ? 0.6 : 0 })} hint={pressure ? 'With a pen, pressing harder draws thicker. With a mouse, faster draws thinner.' : undefined} />
+            {pressure && <Slider control="size-follows-amount" label="How much" value={Math.round(brush.thinning * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => setBrush({ thinning: v / 100 })} />}
+            <Slider control="taper-start" label="Pointy start" value={brush.taperStart} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperStart: v })} />
+            <Slider control="taper-end" label="Pointy end" value={brush.taperEnd} min={0} max={120} format={(v) => (v ? `${v}px` : 'Off')} onChange={(v) => setBrush({ taperEnd: v })} />
+            <HoldToTidyOptions />
+            <PenOptions tool="brush" opacity />
+            <MirrorOptions />
+          </MoreOptions>
+      }
+    />
   );
 }
 

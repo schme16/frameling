@@ -830,6 +830,8 @@ export interface BrushTip {
   /** Chalk and charcoal: how coarse the grain is, 0.5 to 3 (1 = usual). */
   grain?: number;
   /** Chalk and charcoal: the dry medium (see src/dry/maths.ts) whose paper tooth the line catches on. The line then carries a Paper tooth effect, so it is drawn as a picture of pigment on paper, not as tiny shapes. Missing = the grain made of tiny shapes. */
+  /** Chalk and charcoal on a dry medium: a paper this brush keeps for itself, whatever the sheet is on. Missing = the sheet's paper, as it is when the line is drawn. */
+  paper?: 'smooth' | 'fine' | 'medium' | 'laid' | 'rough';
   dry?: 'vine-charcoal' | 'compressed-charcoal' | 'chalk' | 'soft-pastel' | 'oil-pastel' | 'crayon' | 'sketch-pencil' | 'soft-pencil' | 'colour-pencil';
   /** Chalk and charcoal on a dry medium: how much the stick's own bumps streak the line along the way it is dragged, 0 to 1. Missing = the medium's own (see src/dry/maths.ts). */
   streak?: number;

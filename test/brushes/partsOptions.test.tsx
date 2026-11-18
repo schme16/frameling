@@ -85,8 +85,8 @@ describe('the parts of this brush', () => {
     expect(status('tip-picker')).toBeNull();
     expect(host.querySelector('[data-control="revert"]')).toBeNull();
   });
-  it('say Paper is the sheet\'s, not the brush\'s, beside them', () => {
-    expect(host.querySelector('.bp-parts-foot')!.textContent).toContain('Paper is the sheet’s, not the brush’s');
+  it('say Paper is the sheet\'s unless the brush keeps its own, beside them', () => {
+    expect(host.querySelector('.bp-parts-foot')!.textContent).toContain('Paper is the sheet’s, unless this brush keeps its own');
     expect(host.querySelector('[data-testid="paper-group"]')).not.toBeNull();
   });
   it('leave the flash to the words: the tag is there with no animation to depend on', () => {

@@ -5,6 +5,7 @@ import type { BrushSettings, BrushTip, StampShape, TipKind } from '../core/forma
 import { defaultTip, resolveTip, STAMPS, TIPS } from '../geometry/tip';
 import type { BrushPreset } from './model';
 import { activeStick, stickHint, stickIdOf, stickRows } from './stickList';
+import { pixelActiveId, pixelHint, pixelStickRows, pixelTipRows, type PixelLive } from './pixelTipList';
 
 /** What a picker lists: the vector brushes, the pixel brushes, the pen tips, or the sticks chalk and charcoal catch paper with. */
 export type PickerSide = 'vector' | 'pixel' | 'tip' | 'stick';
@@ -74,11 +75,14 @@ export function tipHint(id: string): string {
 export const isFixedSide = (side: PickerSide): side is 'tip' | 'stick' => side === 'tip' || side === 'stick';
 
 /** Their rows, the row in use, and a plain line for a row's tooltip. */
-export function fixedRows(side: PickerSide, live: BrushSettings, custom?: number[][]): BrushPreset[] {
+/** On a pixel brush tool (`pixel` is its brush in use) the same two pickers list what the pixel engine has. */
+export function fixedRows(side: PickerSide, live: BrushSettings, custom?: number[][], pixel?: PixelLive | null): BrushPreset[] {
+  if (pixel) return side === 'stick' ? pixelStickRows() : side === 'tip' ? pixelTipRows(pixel) : [];
   return side === 'stick' ? stickRows(live) : side === 'tip' ? tipRows(live, custom) : [];
 }
-export const fixedActiveId = (side: PickerSide, live: BrushSettings): string => (side === 'stick' ? stickIdOf(activeStick(live.tip)) : tipIdOf(live.tip));
-export const fixedHint = (side: PickerSide, id: string): string => (side === 'stick' ? stickHint(id) : tipHint(id));
+export const fixedActiveId = (side: PickerSide, live: BrushSettings, pixel?: PixelLive | null): string =>
+  pixel && (side === 'tip' || side === 'stick') ? pixelActiveId(side, pixel) : side === 'stick' ? stickIdOf(activeStick(live.tip)) : tipIdOf(live.tip);
+export const fixedHint = (side: PickerSide, id: string): string => (id.startsWith('ptip:') || id.startsWith('pstick:') ? pixelHint(id) : side === 'stick' ? stickHint(id) : tipHint(id));
 
 /** The words a fixed picker uses about itself. */
 export const FIXED_WORDS: Record<'tip' | 'stick', { noun: string; button: string; dialog: string; list: string; none: string }> = {

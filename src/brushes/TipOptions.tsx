@@ -2,13 +2,17 @@
 // sliders the tip in use has and a line about it.
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { useStore } from '../core/store';
+import { DEFAULT_BRUSH } from '../core/doc';
 import type { BrushTip, StampAngle } from '../core/format';
 import { resolveTip } from '../geometry/tip';
 import { PaperGroup } from '../dry/PaperGroup';
 import { clearEdgedPiece, EDGED_SLOTS, edgedHas, makeAlongBrush, setEdgedPiece } from './own';
 import { BrushPresetPicker } from './BrushPresetRow';
 import { LitRow, PartsBox } from './PartsOptions';
-import { makeBrushFromSelection, patchTip, setMatte } from './tips';
+import { makeBrushFromSelection, patchTip, setMatte, setOwnPaper } from './tips';
+import { brushesVersion, useBrushPresets } from './presets';
+import { partsOf } from './parts';
+import { resetPaper, savedBrush } from './partsActions';
 import './brushes.css';
 
 const OWN_TIPS = {
@@ -62,11 +66,17 @@ function EdgedParts({ has }: { has: Record<(typeof EDGED_SLOTS)[number]['id'], b
 /** The paper side of a chalk or charcoal tip: the shared Paper group, with the switch in it and how coarse the paper is. */
 function PaperControls({ tip }: { tip: BrushTip }) {
   const t = resolveTip(tip);
+  useBrushPresets(brushesVersion);
+  const was = savedBrush();
+  const changed = was ? partsOf(was.brush, { ...DEFAULT_BRUSH, tip }).paper : false;
   const grainSize = <Slider control="paper-grain-size" label="Grain size" value={Math.round(t.grain * 10)} min={tip.dry ? 3 : 5} max={30} format={(v) => (v === 10 ? 'Usual' : `${(v / 10).toFixed(1)}x`)} onChange={(v) => patchTip({ grain: v / 10 })} hint="Finer for soft dust, coarser for rough paper." />;
   return (
     <div className="tp-row" data-testid="brush-paper">
       <PaperGroup
-        toggle={{ checked: !!tip.dry, onChange: (v) => patchTip({ dry: v ? (tip.kind === 'chalk' ? 'chalk' : 'compressed-charcoal') : undefined }), hint: 'The line catches on the tooth of a sheet of paper, the way real chalk and charcoal do: pressed lightly it leaves only specks, pressed hard it fills in. Off makes the grain from tiny shapes instead.' }}
+        own={tip.dry ? tip.paper : undefined}
+        onOwn={setOwnPaper}
+        part={{ saved: !!was, changed, reset: () => void resetPaper() }}
+        toggle={{ checked: !!tip.dry, onChange: (v) => patchTip({ dry: v ? (tip.kind === 'chalk' ? 'chalk' : 'compressed-charcoal') : undefined, paper: undefined }), hint: 'The line catches on the tooth of a sheet of paper, the way real chalk and charcoal do: pressed lightly it leaves only specks, pressed hard it fills in. Off makes the grain from tiny shapes instead.' }}
         off={
           <>
             <Slider control="paper-amount" label="Grain" value={Math.round(t.amount * 100)} min={5} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How much of the line is dusty grain, with the paper showing through." />
@@ -80,19 +90,45 @@ function PaperControls({ tip }: { tip: BrushTip }) {
   );
 }
 
-/** The Brush, with the tip and the stick folded under it as its parts, then the paper (the sheet's) for chalk and charcoal, then what the tip in use has. */
-export function TipOptions() {
+/** The tip in use, as the pieces of the panel need it. */
+function useTipFacts() {
   const tip = useStore((s) => s.ui.brush.tip);
-  const t = tip ? resolveTip(tip) : null;
   const kind = tip?.kind ?? null;
   const catchy = !!tip && (kind === 'chalk' || kind === 'charcoal');
+  return { tip, kind, catchy, t: tip ? resolveTip(tip) : null };
+}
+
+/** The tip and the stick folded under the Brush as its parts. */
+export function VectorParts() {
+  const { tip, catchy } = useTipFacts();
+  return <PartsBox stick={catchy} stickOff={catchy && !tip?.dry} paperBelow={catchy} />;
+}
+
+/** The paper, for the tips that catch on it. */
+export function VectorPaper() {
+  const { tip, catchy } = useTipFacts();
+  return catchy && tip ? <PaperControls tip={tip} /> : null;
+}
+
+/** The Brush, with the tip and the stick folded under it as its parts, then the paper (the sheet's unless the brush keeps its own) for chalk and charcoal, then what the tip in use has. */
+export function TipOptions() {
   return (
     <>
       <LitRow part="brush">
         <BrushPresetPicker title="Brush" />
       </LitRow>
-      <PartsBox stick={catchy} stickOff={catchy && !tip?.dry} paperBelow={catchy} />
-      {catchy && tip && <PaperControls tip={tip} />}
+      <VectorParts />
+      <VectorPaper />
+      <VectorTipControls />
+    </>
+  );
+}
+
+/** What the tip in use has: its own sliders and a line about it, and Brush from selection. */
+export function VectorTipControls() {
+  const { tip, kind, t } = useTipFacts();
+  return (
+    <>
       <div className="tp-row" data-testid="brush-tip-more">
       {t && kind === 'watercolour' && <Slider control="wash-edge" label="Edge" value={Math.round(t.amount * 100)} min={0} max={100} format={(v) => `${v}%`} onChange={(v) => patchTip({ amount: v / 100 })} hint="How dark and bold the edge of the wash is, where the paint gathers." />}
       {t && kind === 'stamp' && (

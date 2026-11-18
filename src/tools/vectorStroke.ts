@@ -56,11 +56,11 @@ export function startFromLast(stroke: { add(e: ToolPointer, zoom: number): void 
   stroke.add(e, zoom);
 }
 
-/** A chalk or charcoal brush on a dry medium draws on paper: its line carries a Paper tooth effect, which the Effects panel can change. */
+/** A chalk or charcoal brush on a dry medium draws on paper: its line carries a Paper tooth effect, which the Effects panel can change. The paper is the brush's own when it keeps one, else the sheet's. */
 export function toothEffects(brush: BrushSettings, seed = Math.floor(Math.random() * 1000)): LayerEffect[] | undefined {
   const t = brush.tip;
   if (!t?.dry || (t.kind !== 'chalk' && t.kind !== 'charcoal')) return undefined;
-  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak, getDry().paper) }];
+  return [{ id: uid('fx'), kind: 'tooth', values: toothValues(t.dry, t.grain ?? 1, seed, t.streak, t.paper ?? getDry().paper) }];
 }
 
 /**

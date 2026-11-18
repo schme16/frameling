@@ -132,7 +132,6 @@ export const ONE_SIDED_BRUSHES: BrushGap[] = [...ONE_SIDED_VECTOR_BRUSHES, ...ON
 
 /** Controls on the vector Brush only. */
 export const VECTOR_ONLY_CONTROLS: ControlGap[] = [
-  { side: 'vector', ids: ['preview'], what: 'The big stroke preview at the top', clears: 'piece 4: the shared panel draws one for the pixel brush too' },
   { side: 'vector', ids: ['picker-smoothing'], what: 'Smoothing in the brush list\'s drop down', clears: 'piece 4: the shared panel and its list' },
   { side: 'vector', ids: ['smoothing'], what: 'Smoothing', clears: 'piece 4: the shared panel (the pixel side has only the Stabilizer)' },
   { side: 'vector', ids: ['hold-to-tidy', 'hold-time'], what: 'Hold to tidy, and Hold time', clears: 'by design: it swaps a stroke for a clean shape, and a pixel layer has no shapes' },
@@ -152,14 +151,12 @@ export const VECTOR_ONLY_CONTROLS: ControlGap[] = [
 
 /** Controls on the pixel brush only. */
 export const PIXEL_ONLY_CONTROLS: ControlGap[] = [
-  { side: 'pixel', ids: ['paper-keep'], what: "Keep this brush on (a paper) / Use the sheet's paper", clears: "piece 8: a vector brush keeps its own paper" },
   { side: 'pixel', ids: ['paper-picture'], what: "Use a picture as the paper", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['paper-invert'], what: "Catch on the dark parts instead", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['paper-soften'], what: "Soften the bumps of a bigger paper", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['paper-new-patch'], what: "A new patch of paper for every dab", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['paper-thin'], what: "Thin the paint instead of stopping it", clears: "piece 12: a picture grain on a vector stroke" },
   { side: 'pixel', ids: ['paper-hold'], what: "How much it holds the whole line back", clears: "piece 12: a picture grain on a vector stroke" },
-  { side: 'pixel', ids: ['tip-square'], what: "Tip: Square", clears: "piece 4: the shared Tip picker" },
   { side: 'pixel', ids: ['picture-own-colours'], what: "Its own colours (a picture tip)", clears: "piece 4: the shared Tip picker" },
   { side: 'pixel', ids: ['stamp-reset'], what: "Back to the usual brush (a picture brush on the plain Brush)", clears: "piece 5: the plain Brush on a pixel layer takes the shared panel" },
   { side: 'pixel', ids: ['picture-draw', 'picture-file'], what: "Draw a picture... and From a picture file... (a picture tip)", clears: "piece 4: the shared Tip picker" },

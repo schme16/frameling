@@ -224,6 +224,13 @@ one side only has to be in `parityGaps.ts`; an id in `parityGaps.ts` that is now
 `brand/ab/brush-parity/presets/`. `scripts/docs/ab-brush-parity/timing.cjs` times a 160 move stroke with each of them. Run them in xvfb,
 after `npm run build`; the first lines of each file say how.
 
+**The shared panel and own paper.** `test/brushes/panelSkeleton.test.tsx` holds the vector Brush and the Pixel brush, Soft paint and Chalk and
+charcoal panels to one order (preview, Brush, parts, paper, Size, Save as), and checks the Tip and Stick pickers, the changed marks, the
+resets and Back to how it came on a pixel brush. `test/brushes/pixelParts.test.ts` is the same as pure functions, and
+`test/brushes/ownPaper.test.ts` covers a vector brush that keeps its own paper (reading, saving, the line it draws, the part and its reset).
+`scripts/docs/ab-brush-parity/panel-timing.cjs` times the panel and each list opening on two renderers (`--renderer <dir>` for a before), and
+`panel-shots.cjs` with `sheets-panel.py` lay the panels side by side, before and after, in `brand/ab/brush-parity/panel/`.
+
 **Shrinking the list.** Each entry in `parityGaps.ts` has a line in plain words saying which piece of the plan clears it
 (`piece 9`, or `by design` for what stays one sided because vectors have shapes and pixels have pixels). When you close a gap the
 test fails until you take the entry out. For a control, give the other side's panel the same `control` id and delete the entry. For
