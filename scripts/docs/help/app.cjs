@@ -372,7 +372,7 @@ const entries = [
       { rec: '@', crop: [0, 0, 1280, 800], every: 80 },
       wait(900),
       // Right-click the Ellipse (a button on its own: the Brush and the Eraser open their pull-outs instead).
-      { rclick: [45, 583] },
+      { rclickOn: '[data-tool-id="ellipse"]' },
       wait(1200),
       { clickOn: '.ui-menu-item', text: 'Lock the tools', after: 700 },
       { move: [620, 420] },
@@ -380,7 +380,7 @@ const entries = [
       // Locked: the grip is gone (a small lock sits where it was), and the rail's edge can't be grabbed.
       wait(2600),
       // The menu now offers Unlock, with the rest greyed and a reason under each.
-      { rclick: [45, 583] },
+      { rclickOn: '[data-tool-id="ellipse"]' },
       wait(2200),
       { clickOn: '.ui-menu-item', text: 'Unlock the tools', after: 700 },
       { move: [620, 420] },

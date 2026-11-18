@@ -28,6 +28,8 @@ module.exports = [
       wait(3000),
       js(`__framelingQuillReacts.submit('quill.sign', { text: 'You are brilliant!' })`),
       wait(2200),
+      // The words stay covered until Read it is pressed (the real gate), then it is Hold it up.
+      { clickOn: '.ui-toast-action', text: 'Read it', after: 1600 },
       { clickOn: '.ui-toast-action', text: 'Hold it up', after: 4200 },
       { rec: 'stop' },
     ],

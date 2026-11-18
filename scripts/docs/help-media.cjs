@@ -16,6 +16,7 @@
 //     choices: {...},            // answers to ask-once questions, on top of workspace.follow: 'never' (so that one never shows)
 //     size: [1280, 800],         // window size, default 1280 x 800
 //     steps: [...],              // the record.cjs steps. {"shot": "@"} saves the picture, {"rec": "@", ...} starts the clip.
+//     needs: 'interactives',     // a feature switched off in src/features/flags.json: the entry is skipped (and says so) until it is on
 //     external: 'scripts/e2e/popout-media.cjs',  // made by another script (it needs the real main process, e.g. two windows): this run skips it and says which one to use
 //     width: 800,                // widest the output gets (default 800)
 //     poster: 12 }               // clips: the poster frame (default the last one)
@@ -126,6 +127,11 @@ app.whenReady().then(async () => {
   }
   const picked = entries.filter((e) => !only || only.includes(e.name));
   for (const e of picked.filter((x) => x.external)) console.log(`skipped ${e.name}: made by ${e.external}`);
+  // An entry for a feature that is switched off (src/features/flags.json) can't be shot from this build: it says what it needs.
+  // HELP_INTERACTIVES=1 is for a private renderer built with the switch on.
+  const flags = require('../../src/features/flags.json');
+  const off = (x) => x.needs && flags[x.needs] !== true && !process.env[`HELP_${x.needs.toUpperCase()}`];
+  for (const e of picked.filter((x) => off(x))) console.log(`skipped ${e.name}: ${e.needs} is switched off in src/features/flags.json (set it true, rebuild, run with HELP_${e.needs.toUpperCase()}=1)`);
   if (only) for (const n of only) if (!names.has(n)) console.log(`no entry named ${n}`);
   fs.mkdirSync(outDir, { recursive: true });
   const lib = mockMain(ipcMain);
@@ -138,7 +144,7 @@ app.whenReady().then(async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'help-media-'));
   const failed = [];
   let made = 0;
-  for (const e of picked.filter((x) => !x.external)) {
+  for (const e of picked.filter((x) => !x.external && !off(x))) {
     for (const mode of THEMES) {
       logs.length = 0;
       try {
@@ -147,7 +153,12 @@ app.whenReady().then(async () => {
         console.log(`ok ${out}${issues.size ? `  [LOOK: ${[...issues].slice(0, 3).join(' | ')}]` : ''}${logs.length ? `  (console errors: ${logs.slice(0, 2).join(' | ')})` : ''}`);
       } catch (err) {
         failed.push(`${e.name} (${mode}): ${err.message}`);
-        console.log(`FAILED ${e.name} (${mode}): ${err.message}`);
+        console.log(`FAILED ${e.name} (${mode}): ${err.message}${logs.length ? `  (console errors: ${logs.slice(0, 2).join(' | ')})` : ''}`);
+        // HELP_DEBUG_DIR=<dir>: keep a picture of the window where it stopped.
+        if (process.env.HELP_DEBUG_DIR) {
+          fs.mkdirSync(process.env.HELP_DEBUG_DIR, { recursive: true });
+          fs.writeFileSync(path.join(process.env.HELP_DEBUG_DIR, `${e.name}-${mode}-failed.png`), (await win.webContents.capturePage()).toPNG());
+        }
         await stopActiveRec().catch(() => undefined);
       }
     }
