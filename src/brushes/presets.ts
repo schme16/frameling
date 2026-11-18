@@ -1,7 +1,7 @@
 // The brushes you have saved: where they live, and everything you can do to them. The rules are in model.ts. Yours are
 // kept in the browser's storage under `frameling.brushPresets`, so the settings backup carries them too.
 import { useSyncExternalStore } from 'react';
-import { currentChoice, registerChoice } from '../core/choices';
+import { currentChoice, registerChoice, withChoice } from '../core/choices';
 import { DEFAULT_BRUSH, findLayer, uid } from '../core/doc';
 import type { BrushSettings } from '../core/format';
 import { registerCommand, unregisterCommand } from '../core/registry';
@@ -29,7 +29,9 @@ import {
   MAX_PRESETS,
   onSide,
   parseBrushesText,
+  pixelHalf,
   pixelPresetState,
+  presetBody,
   presetState,
   renamePreset,
   sameBrush,
@@ -39,10 +41,14 @@ import {
   stepPreset,
   updatePixelPreset,
   updatePreset,
+  vectorHalf,
+  madeOn,
   type BrushPreset,
   type PresetState,
 } from './model';
-import { noteRecent, toggleFavourite } from './picker';
+import { bigLoss, keptOnPixels, keptOnVectors, type Kept } from './translate';
+import { canonicalId } from './pairs';
+import { noteRecent, requestPicker, toggleFavourite } from './picker';
 import { readPicked } from './parts';
 import { startBrushFlash } from './flash';
 import './help';
@@ -66,6 +72,40 @@ registerChoice<BrushEdits>({
   category: 'Drawing',
   help: 'brush-presets',
   silent: true,
+});
+
+/** What to do when a brush made for the other kind of layer would look quite different here: draw it as close as this kind can, or pick another. */
+export type SwapAnswer = 'close' | 'pick';
+export const SWAP_PIXELS = 'brushes.swap.pixels';
+export const SWAP_VECTORS = 'brushes.swap.vectors';
+const SWAP_OPTIONS = {
+  pixels: [
+    { value: 'close' as const, label: choiceWord('choice.brushes.swap.pixels.close.label'), detail: choiceWord('choice.brushes.swap.pixels.close.detail'), did: choiceWord('choice.brushes.swap.pixels.close.did') },
+    { value: 'pick' as const, label: choiceWord('choice.brushes.swap.pixels.pick.label'), detail: choiceWord('choice.brushes.swap.pixels.pick.detail'), did: choiceWord('choice.brushes.swap.pixels.pick.did') },
+  ],
+  vectors: [
+    { value: 'close' as const, label: choiceWord('choice.brushes.swap.vectors.close.label'), detail: choiceWord('choice.brushes.swap.vectors.close.detail'), did: choiceWord('choice.brushes.swap.vectors.close.did') },
+    { value: 'pick' as const, label: choiceWord('choice.brushes.swap.vectors.pick.label'), detail: choiceWord('choice.brushes.swap.vectors.pick.detail'), did: choiceWord('choice.brushes.swap.vectors.pick.did') },
+  ],
+};
+
+registerChoice<SwapAnswer>({
+  id: SWAP_PIXELS,
+  title: choiceWord('choice.brushes.swap.pixels.title'),
+  question: choiceWord('choice.brushes.swap.pixels.question'),
+  options: SWAP_OPTIONS.pixels,
+  default: 'close',
+  category: 'Drawing',
+  help: 'brush-presets',
+});
+registerChoice<SwapAnswer>({
+  id: SWAP_VECTORS,
+  title: choiceWord('choice.brushes.swap.vectors.title'),
+  question: choiceWord('choice.brushes.swap.vectors.question'),
+  options: SWAP_OPTIONS.vectors,
+  default: 'close',
+  category: 'Drawing',
+  help: 'brush-presets',
 });
 
 let mine: BrushPreset[] = [];
@@ -95,7 +135,10 @@ function setPicked(id: string | null): void {
 }
 
 try {
-  if (typeof localStorage !== 'undefined') pickedId = readPicked(JSON.parse(localStorage.getItem(PICKED_KEY) ?? 'null'), allPresets(mine).map((p) => p.id));
+  if (typeof localStorage !== 'undefined') {
+    const saved = JSON.parse(localStorage.getItem(PICKED_KEY) ?? 'null');
+    pickedId = readPicked(typeof saved === 'string' ? canonicalId(saved) : saved, allPresets(mine).map((p) => p.id));
+  }
 } catch {
   // unreadable: nothing was picked
 }
@@ -118,10 +161,7 @@ function setMine(list: BrushPreset[]): void {
   mine = list;
   try {
     if (typeof localStorage !== 'undefined') {
-      const kept = mine.map((p) => {
-        const body = p.tool === 'pixel' ? { id: p.id, name: p.name, tool: p.tool, pixel: p.pixel } : { id: p.id, name: p.name, tool: p.tool, brush: p.brush };
-        return p.group ? { ...body, group: p.group } : body;
-      });
+      const kept = mine.map((p) => presetBody(p, true));
       localStorage.setItem(KEY, JSON.stringify({ version: 1, presets: kept }));
     }
   } catch {
@@ -143,15 +183,31 @@ export const namingMode = (): 'save' | 'rename' | null => naming;
 export const pickedBrushId = (): string | null => pickedId;
 export const currentBrushState = (): PresetState => presetState(store().get().ui.brush, mine, pickedId);
 
-/** The two sides of the library: the vector Brush's brushes, and the pixel brush tools'. The tool you are on says which one the row, the picker and the commands mean. */
+/**
+ * The two kinds of layer a brush is drawn on. The brush list is one list; a brush made for one kind is drawn on the other
+ * through its translation. Which kind the row, the picker and the commands mean is the layer you are drawing on, or the
+ * pixel brush tool you hold (which draws pixels wherever you are: see ui/drawAnywhere.ts).
+ */
 export type Side = 'vector' | 'pixel';
 export const sideOfTool = (tool: string): Side => (isPixelBrushTool(tool) ? 'pixel' : 'vector');
-export const currentSide = (): Side => sideOfTool(liveBrushTool());
+/** The kind of the layer in use: pixel only for a pixel layer, so a tile or camera layer counts as vector, as the panel does. */
+export function layerSide(): Side {
+  const { ui, doc } = store().get();
+  return (findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1])?.kind === 'pixel' ? 'pixel' : 'vector';
+}
+export const currentSide = (): Side => (isPixelBrushTool(liveBrushTool()) ? 'pixel' : layerSide());
 export const currentPixelState = (): PresetState => pixelPresetState(currentSpec(), mine, pickedId);
 /** Which brush is lit on a side, and whether it has been changed. */
 export const stateFor = (side: Side): PresetState => (side === 'pixel' ? currentPixelState() : currentBrushState());
-/** The brushes on one side: the starters and yours. */
+/** The brushes a kind of layer lists: the starters and yours, the same list for both. */
 export const brushesOnSide = (side: Side): BrushPreset[] => onSide(everyBrush(), side);
+
+/** What the picked brush has that this kind of layer cannot draw, when its half for this kind is worked out and not made. Empty when nothing is lost. */
+export function keptFor(p: BrushPreset | undefined, side: Side): Kept[] {
+  if (!p || madeOn(p, side)) return [];
+  return side === 'pixel' ? keptOnPixels(p.brush) : p.pixel ? keptOnVectors(p.pixel) : [];
+}
+export const pickedBrush = (): BrushPreset | undefined => (pickedId ? everyBrush().find((p) => p.id === pickedId) : undefined);
 
 export function subscribeBrushes(fn: () => void): () => void {
   listeners.add(fn);
@@ -173,16 +229,82 @@ export function activeOwn(side: Side = currentSide()): BrushPreset | undefined {
   return mine.find((p) => p.id === activeId);
 }
 
-/** Uses a brush: its settings go to the brush in use. */
+// Which brush each kind of layer last had put in it. A kind that already has the picked brush keeps what it has (so a brush
+// you changed is still changed when you hop to the other kind and back); a kind that has another brush gets this one's half.
+const appliedOn: Record<Side, string | null> = { vector: pickedId, pixel: pickedId };
+let swapping = false;
+/** The tool that was changed for you when a swap went to a pixel layer, so a swap back puts it right. */
+let swapTool: { from: string; to: string } | null = null;
+/** True while a swap is putting the picked brush's other half in, so a flash or a follow knows it was not you. */
+export const isSwapping = (): boolean => swapping;
+const whileSwapping = (fn: () => void): void => {
+  const was = swapping;
+  swapping = true;
+  try {
+    fn();
+  } finally {
+    swapping = was;
+  }
+};
+
+/** Puts one half of a brush in the settings that kind of layer draws with. `pick` lets a brush of another kind (soft paint, charcoal) take its tool. */
+function putHalf(p: BrushPreset, side: Side, pick: boolean, onSwap = false): void {
+  if (side === 'pixel') {
+    const before = store().get().ui.tool;
+    applySpec(pixelHalf(p), pick);
+    const after = store().get().ui.tool;
+    // Only a swap puts the tool back on the way out; picking a brush yourself on a pixel layer is you choosing to paint with it.
+    if (onSwap && after !== before) swapTool = { from: before, to: after };
+  } else store().setUi({ brush: { ...vectorHalf(p) } });
+  appliedOn[side] = p.id;
+}
+
+/** No brush is picked: what each kind of layer has stays as it is, and nothing follows the layer until one is picked. */
+export function pickNone(): void {
+  setPicked(null);
+  appliedOn.vector = null;
+  appliedOn.pixel = null;
+  swapTool = null;
+  emit();
+}
+
+/** Uses a brush: its half for the kind of layer you are on goes to the brush in use. */
 export function applyPreset(id: string): boolean {
-  const p = everyBrush().find((x) => x.id === id);
+  const p = everyBrush().find((x) => x.id === canonicalId(id));
   if (!p) return false;
   setPicked(p.id);
-  if (p.tool === 'pixel' && p.pixel) applySpec(p.pixel);
-  else store().setUi({ brush: { ...p.brush } });
+  swapTool = null;
+  putHalf(p, currentSide(), true);
   noteRecent(p.id);
   emit();
   return true;
+}
+
+/** The brush stays picked and its half for the new kind of layer is put in: the layer decides the side. */
+export function followLayer(kind: Side): void {
+  const p = pickedBrush();
+  if (!p) return;
+  if (kind === 'vector' && swapTool) {
+    // A swap to pixels changed the tool for the brush's sake: a swap back puts it as it was.
+    const { from, to } = swapTool;
+    swapTool = null;
+    if (store().get().ui.tool === to) pickTool(from);
+  }
+  if (appliedOn[kind] === p.id) return;
+  const tool = store().get().ui.tool;
+  const pick = tool === 'brush' || isPixelBrushTool(tool);
+  const put = () => {
+    whileSwapping(() => putHalf(p, kind, pick, true));
+    emit();
+  };
+  const kept = keptFor(p, kind);
+  if (!bigLoss(kept)) return put();
+  withChoice<SwapAnswer>(kind === 'pixel' ? SWAP_PIXELS : SWAP_VECTORS, (answer) => {
+    if (answer === 'close') return put();
+    // Not this brush on this kind: the layer keeps the brush it has, and the picker opens to pick one for it.
+    pickNone();
+    requestPicker();
+  });
 }
 
 /** Saves the brush in use under a name. Returns the brush saved, or null if the name was empty or the list was full. */
@@ -206,7 +328,8 @@ export function saveCurrentAs(name: string, group?: string): BrushPreset | null 
 export function updateActive(): boolean {
   const own = activeOwn();
   if (!own) return false;
-  const spec = own.tool === 'pixel' ? currentSpec() : null;
+  // The half for the kind of layer you are on is what gets kept; on a brush made for the other kind it is now a half of its own.
+  const spec = currentSide() === 'pixel' ? currentSpec() : null;
   setMine(spec ? updatePixelPreset(mine, own.id, spec) : updatePreset(mine, own.id, store().get().ui.brush));
   toast(`Updated "${own.name}".`, { kind: 'success' });
   return true;
@@ -274,7 +397,7 @@ export function stepBrush(by: 1 | -1): void {
 
 /** The pure part of "save every change": the brush a saved brush should become, or null to leave it. */
 export function followTarget(edits: BrushEdits, own: BrushPreset | undefined, brush: BrushSettings): BrushSettings | null {
-  if (edits !== 'follow' || !own || sameBrush(own.brush, brush)) return null;
+  if (edits !== 'follow' || !own || sameBrush(vectorHalf(own), brush)) return null;
   return { ...brush };
 }
 
@@ -316,21 +439,29 @@ export function startBrushPresets(): () => void {
   syncPickCommands();
   const s = store();
   let last = s.get().ui.brush;
+  let lastKind = layerSide();
   const offVector = s.subscribe(() => {
+    // The layer changed kind: the brush stays picked, and its half for the new kind goes in.
+    const kind = layerSide();
+    if (kind !== lastKind) {
+      lastKind = kind;
+      followLayer(kind);
+    }
     const now = s.get().ui.brush;
     if (now === last) return;
     last = now;
+    if (swapping) return emit();
     const own = mine.find((p) => p.id === pickedId);
-    const to = followTarget(currentChoice<BrushEdits>('brushes.edits'), own, now);
+    const to = currentSide() === 'vector' ? followTarget(currentChoice<BrushEdits>('brushes.edits'), own, now) : null;
     if (own && to) setMine(updatePreset(mine, own.id, to));
     else emit();
   });
   // The pixel brush tools: the same, when any of their settings change or you move between them.
   let lastTool = liveBrushTool();
   const onPixel = () => {
-    if (isApplying()) return;
-    const own = mine.find((p) => p.id === pickedId && p.tool === 'pixel');
-    const spec = currentSpec();
+    if (isApplying() || swapping) return;
+    const own = mine.find((p) => p.id === pickedId);
+    const spec = currentSide() === 'pixel' ? currentSpec() : null;
     const to = own && spec ? followPixelTarget(currentChoice<BrushEdits>('brushes.edits'), own, spec) : null;
     if (own && to) setMine(updatePixelPreset(mine, own.id, to));
     else emit();
@@ -353,8 +484,10 @@ export function startBrushPresets(): () => void {
 
 /** The pixel version of followTarget: the pixel brush a saved one should become, or null to leave it. */
 export function followPixelTarget(edits: BrushEdits, own: BrushPreset | undefined, spec: NonNullable<ReturnType<typeof currentSpec>>): NonNullable<ReturnType<typeof currentSpec>> | null {
-  if (edits !== 'follow' || !own?.pixel || specTool(own.pixel) !== specTool(spec)) return null;
-  return sameSpecFor(own.pixel, spec) ? null : spec;
+  if (edits !== 'follow' || !own) return null;
+  const half = pixelHalf(own);
+  if (specTool(half) !== specTool(spec)) return null;
+  return sameSpecFor(half, spec) ? null : spec;
 }
 
 // ---------------------------------------------------------------- sharing
@@ -442,10 +575,8 @@ let syncedFor = '';
 /** Picking a brush from the palette: use it, and move to the brush tool when the layer can take it. */
 export function pickBrushCommand(id: string): void {
   if (!applyPreset(id)) return;
-  if (everyBrush().find((p) => p.id === id)?.tool === 'pixel') return;
-  const { doc, ui } = store().get();
-  const layer = findLayer(doc, ui.activeLayerId) ?? doc.layers[doc.layers.length - 1];
-  if (ui.tool !== 'brush' && (!layer || layer.kind === 'vector')) pickTool('brush');
+  // A pixel layer's tool was picked for it (see applySpec); on any other layer the Brush is the tool.
+  if (currentSide() === 'vector' && store().get().ui.tool !== 'brush') pickTool('brush');
 }
 
 /** One palette command per brush ("Brush: Ink"), kept in step with the list. */

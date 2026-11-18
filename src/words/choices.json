@@ -2675,5 +2675,54 @@
     "text": "The brush draws on the paper you are on, so it may look a little different from when you saved it.",
     "where": "Dialog and Preferences: the small line under the \"keep\" answer in \"Using a brush saved on another paper\"."
   },
-  "choice.paper.saved.keep.did": { "text": "Kept your sheet’s paper.", "where": "Toast when \"keep\" is used without asking (\"Using a brush saved on another paper\"), in the past tense." }
+  "choice.paper.saved.keep.did": { "text": "Kept your sheet’s paper.", "where": "Toast when \"keep\" is used without asking (\"Using a brush saved on another paper\"), in the past tense." },
+  "choice.brushes.swap.pixels.title": { "text": "A vector brush on a pixel layer", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brushes.swap.pixels.question": {
+    "text": "This brush was made for vectors, and a pixel layer can’t draw all of it. What should it do on pixel layers?",
+    "where": "The question the \"A vector brush on a pixel layer\" dialog asks."
+  },
+  "choice.brushes.swap.pixels.close.label": { "text": "Draw it as close as pixels can", "where": "Dialog and Preferences: the button for the answer \"close\" in \"A vector brush on a pixel layer\"." },
+  "choice.brushes.swap.pixels.close.detail": {
+    "text": "The brush is worked out as a pixel brush, and what pixels can’t draw is listed under the brush. Go back to a vector layer and nothing was lost.",
+    "where": "Dialog and Preferences: the small line under the \"close\" answer in \"A vector brush on a pixel layer\"."
+  },
+  "choice.brushes.swap.pixels.close.did": {
+    "text": "Drew the brush as close as pixels can.",
+    "where": "Toast when \"close\" is used without asking (\"A vector brush on a pixel layer\"), in the past tense."
+  },
+  "choice.brushes.swap.pixels.pick.label": { "text": "Pick a pixel brush", "where": "Dialog and Preferences: the button for the answer \"pick\" in \"A vector brush on a pixel layer\"." },
+  "choice.brushes.swap.pixels.pick.detail": {
+    "text": "This layer keeps the brush it had, and the brush list opens so you can pick one that pixels draw well.",
+    "where": "Dialog and Preferences: the small line under the \"pick\" answer in \"A vector brush on a pixel layer\"."
+  },
+  "choice.brushes.swap.pixels.pick.did": {
+    "text": "Kept this layer’s brush, and opened the brush list.",
+    "where": "Toast when \"pick\" is used without asking (\"A vector brush on a pixel layer\"), in the past tense."
+  },
+  "choice.brushes.swap.vectors.title": { "text": "A pixel brush on a vector layer", "where": "Name of this choice in Preferences > Behaviour (group: Drawing)." },
+  "choice.brushes.swap.vectors.question": {
+    "text": "This brush was made for pixels, and a vector layer can’t draw all of it. What should it do on vector layers?",
+    "where": "The question the \"A pixel brush on a vector layer\" dialog asks."
+  },
+  "choice.brushes.swap.vectors.close.label": {
+    "text": "Draw it as close as vectors can",
+    "where": "Dialog and Preferences: the button for the answer \"close\" in \"A pixel brush on a vector layer\"."
+  },
+  "choice.brushes.swap.vectors.close.detail": {
+    "text": "The brush is worked out as a vector brush, and what vectors can’t draw is listed under the brush. Go back to a pixel layer and nothing was lost.",
+    "where": "Dialog and Preferences: the small line under the \"close\" answer in \"A pixel brush on a vector layer\"."
+  },
+  "choice.brushes.swap.vectors.close.did": {
+    "text": "Drew the brush as close as vectors can.",
+    "where": "Toast when \"close\" is used without asking (\"A pixel brush on a vector layer\"), in the past tense."
+  },
+  "choice.brushes.swap.vectors.pick.label": { "text": "Pick a vector brush", "where": "Dialog and Preferences: the button for the answer \"pick\" in \"A pixel brush on a vector layer\"." },
+  "choice.brushes.swap.vectors.pick.detail": {
+    "text": "This layer keeps the brush it had, and the brush list opens so you can pick one that vectors draw well.",
+    "where": "Dialog and Preferences: the small line under the \"pick\" answer in \"A pixel brush on a vector layer\"."
+  },
+  "choice.brushes.swap.vectors.pick.did": {
+    "text": "Kept this layer’s brush, and opened the brush list.",
+    "where": "Toast when \"pick\" is used without asking (\"A pixel brush on a vector layer\"), in the past tense."
+  }
 }

@@ -59,7 +59,7 @@ const entry = (n) => ({
     ...lists.map(([s, nm]) => log(open(s, `pixel ${nm} list cold`))), ...lists.map(([s, nm]) => log(open(s, `pixel ${nm} list warm`))),
     L.js(HELPER), L.js(`__framelingSoft.edge('smooth')`), L.cmd('view.zoom100'), L.wait(300), L.js(`${F}.store().setUi({ tool: 'pixel-brush', color: '#1b1a20' })`), log(stroke),
     // Chalk and charcoal
-    L.js(`${F}.run('brush.pick.starter:px-chalk')`), L.wait(2500),
+    L.js(`${F}.run('brush.pick.starter:chalk')`), L.wait(2500),
     log(openPanel('charcoal', 'chalk and charcoal panel open')),
     ...lists.map(([s, nm]) => log(open(s, `charcoal ${nm} list cold`))),
     // Soft paint

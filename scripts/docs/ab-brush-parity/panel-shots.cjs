@@ -11,5 +11,5 @@ module.exports = [
   entry('ps-vector', [L.template('blank-vector'), L.wait(700), L.js(`${F}.declinePenCheck()`), L.cmd('tools.brush'), L.js(`${F}.run('brush.pick.starter:sketch-pencil')`), showOpts, L.wait(500), openAll, L.wait(500)]),
   entry('ps-pixel', pixel('pixel-brush', 'starter:px-round6')),
   entry('ps-soft', pixel('soft-brush', 'starter:px-soft-brush')),
-  entry('ps-dry', pixel('charcoal', 'starter:px-chalk')),
+  entry('ps-dry', pixel('charcoal', 'starter:chalk')),
 ];

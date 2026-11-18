@@ -44,7 +44,7 @@ export function pictureFromRows(rows: readonly string[]): PixelStamp {
 }
 
 // A comb across the line: with `follow` it turns to the line, so each tooth drags a streak along it.
-const COMB = pictureFromRows(['##', '##', '..', '##', '##', '##', '..', '##', '..', '##', '##', '##']);
+export const COMB = pictureFromRows(['##', '##', '..', '##', '##', '##', '..', '##', '..', '##', '##', '##']);
 const STAR = pictureFromRows(['..#..', '.###.', '#####', '.###.', '#...#']);
 const HEART = pictureFromRows(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']);
 const SPARKLE = pictureFromRows(['..#..', '..#..', '#####', '..#..', '..#..']);
@@ -66,8 +66,8 @@ export function softPicture(w: number, h: number, paint: (x: number, y: number) 
  * A vector stamp (a leaf, a paw, a dash) as a soft picture tip: the same outlines the vector brush draws, one unit across
  * and centred, laid on a square of `side` cells and sampled four by four a cell, so the pixel brush stamps the same shape.
  */
-export function stampPicture(shape: string, side = 32): PixelStamp {
-  const rings = stampRings(shape, []);
+export function stampPicture(shape: string, side = 32, custom: number[][] = []): PixelStamp {
+  const rings = stampRings(shape, custom);
   const inside = (x: number, y: number): boolean => {
     let n = 0;
     for (const r of rings) {
@@ -126,7 +126,7 @@ const r = (from: DynRoute['from'], to: DynRoute['to'], amount: number, invert = 
  * after the pen's pressure itself, so the Pen page's own pressure on size is left off, as a vector line with no thinning leaves it. The same goes for flow,
  * which a vector line has no pressure on either.
  */
-const likeVector = (size: number, thinning: number, taper?: { start: number; end: number }): Partial<DabBrush> => {
+export const likeVector = (size: number, thinning: number, taper?: { start: number; end: number }): Partial<DabBrush> => {
   // A dab is a whole number of pixels, so the size is rounded and the rest follows from the rounded one.
   const big = Math.max(1, Math.round(size * (1 + thinning)));
   return {

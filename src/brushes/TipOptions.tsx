@@ -1,5 +1,6 @@
 // The tip in the brush options: one picker that shows what each tip draws (the stamp shapes are in it too), then the few
 // sliders the tip in use has and a line about it.
+import { vectorHalf } from './model';
 import { ActionButton, Choice, Slider, Tip, Toggle } from '../canvas/controls';
 import { useStore } from '../core/store';
 import { DEFAULT_BRUSH } from '../core/doc';
@@ -68,7 +69,7 @@ function PaperControls({ tip }: { tip: BrushTip }) {
   const t = resolveTip(tip);
   useBrushPresets(brushesVersion);
   const was = savedBrush();
-  const changed = was ? partsOf(was.brush, { ...DEFAULT_BRUSH, tip }).paper : false;
+  const changed = was ? partsOf(vectorHalf(was), { ...DEFAULT_BRUSH, tip }).paper : false;
   const grainSize = <Slider control="paper-grain-size" label="Grain size" value={Math.round(t.grain * 10)} min={tip.dry ? 3 : 5} max={30} format={(v) => (v === 10 ? 'Usual' : `${(v / 10).toFixed(1)}x`)} onChange={(v) => patchTip({ grain: v / 10 })} hint="Finer for soft dust, coarser for rough paper." />;
   return (
     <div className="tp-row" data-testid="brush-paper">

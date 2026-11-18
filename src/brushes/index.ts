@@ -2,6 +2,7 @@
 // The rules are in model.ts, where they are kept and changed in presets.ts, and the row itself is BrushPresetRow.tsx.
 import { registerCommands } from '../core/registry';
 import { store } from '../core/store';
+import { setFold } from '../canvas/folds';
 import { showPanel } from '../ui/dock';
 import { pickTool } from '../tools/pick';
 import './help';
@@ -15,7 +16,9 @@ import {
   copyBrushesText,
   currentSide,
   deleteActive,
+  keptFor,
   myBrushes,
+  pickedBrush,
   saveBrushesFile,
   startNaming,
   stateFor,
@@ -138,6 +141,20 @@ registerCommands([
     run: () => void resetPaper(),
   },
   {
+    id: 'brush.kept',
+    label: 'Show what this layer cannot draw of the brush',
+    category: 'Draw',
+    description: 'The brush you picked follows you between pixel and vector layers. Open the greyed list of what this kind of layer cannot draw of it, each with its reason. Nothing is lost: the other kind of layer draws it again.',
+    help: 'brush-presets',
+    keywords: ['brush', 'kept', 'greyed', 'grayed', 'translation', 'pixel layer', 'vector layer', 'swap', 'follows', 'why does my brush look different', 'not drawn', 'cannot draw', 'lost', 'different on pixels', 'different on vectors'],
+    enabled: () => keptFor(pickedBrush(), currentSide()).filter((k) => !k.noRow).length > 0,
+    reason: () => (pickedBrush() ? 'This kind of layer draws all of the brush you picked' : 'Pick a brush first'),
+    run: () => {
+      showBrushOptions();
+      setFold('kept', true);
+    },
+  },
+  {
     id: 'brush.update',
     label: 'Update the saved brush',
     category: 'Draw',
@@ -175,7 +192,7 @@ registerCommands([
     label: 'Next saved brush',
     category: 'Draw',
     keys: ['Alt+ArrowDown'],
-    description: 'Move to the next brush in the row at the top of the brush options. On a pixel brush tool, the next pixel brush.',
+    description: 'Move to the next brush in the list at the top of the brush options. It is the same list on a pixel layer and a vector layer.',
     help: 'brush-presets',
     keywords: ['brush', 'preset', 'next', 'switch brush', 'cycle'],
     run: () => {
@@ -189,7 +206,7 @@ registerCommands([
     label: 'Previous saved brush',
     category: 'Draw',
     keys: ['Alt+ArrowUp'],
-    description: 'Move to the brush before this one in the row at the top of the brush options.',
+    description: 'Move to the brush before this one in the list at the top of the brush options.',
     help: 'brush-presets',
     keywords: ['brush', 'preset', 'previous', 'switch brush', 'cycle'],
     run: () => {

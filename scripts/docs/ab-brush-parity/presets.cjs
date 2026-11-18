@@ -18,9 +18,8 @@ const GROUPS = {
   'scatter-and-spray': ['speckle', 'sprinkle'],
   shapes: ['slash'],
 };
-// The pixel brush that pairs with each vector brush (the ones whose ids differ).
-const PIXEL_ID = { 'sketch-pencil': 'sketch-pencil-medium', 'dry-brush': 'dry-brush-crayon', broad: 'broad-nib' };
-const px = (v) => `starter:px-${PIXEL_ID[v] ?? v}`;
+// One brush with two halves since piece 6: the same id on a pixel layer, and the layer says which half is drawn.
+const px = (v) => `starter:${v}`;
 // An S curve with a bell of pressure: light, hard in the middle, light.
 const path = (cy) => Array.from({ length: 64 }, (_, i) => { const t = i / 63; return [Math.round(36 + t * 440), Math.round(cy + 16 * Math.sin(t * Math.PI * 2)), Math.round((0.2 + 0.8 * Math.sin(Math.PI * t)) * 100) / 100]; });
 const draw = (cy) => L.js(`__sp.stroke(${JSON.stringify(path(cy))}, { pen: true, delay: 8 })`);

@@ -119,3 +119,22 @@
   content: ' \2713';
   color: var(--accent);
 }
+
+/* What the picked brush has that this kind of layer cannot draw: one line, and the controls greyed behind it. */
+.bp-kept {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bp-kept-line {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.bp-kept-row {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.bp-kept-row .cv-field-value {
+  margin-left: auto;
+}

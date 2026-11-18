@@ -64,17 +64,18 @@ afterEach(() => {
 });
 
 describe('the pixel side of the picker', () => {
-  it('lists the pixel brushes and not the vector ones', () => {
+  it('lists the one list: pixel brushes, vector brushes drawn as pixels, and a pair once', () => {
     open();
     for (const h of heads()) if (h.getAttribute('aria-expanded') === 'false') act(() => h.click());
     const shown = names();
-    expect(shown).toContain(PIXEL_STARTERS[0].name);
-    // Vector brushes that have no pixel brush of the same name never show here.
-    const pixelNames = PIXEL_STARTERS.map((p) => p.name);
-    for (const s of STARTERS) if (!pixelNames.includes(s.name)) expect(shown).not.toContain(s.name);
-    expect(shown).not.toContain('Watercolour');
+    expect(shown).toContain('Round 3');
+    // A vector brush with no pixel half is here too, drawn through its translation.
+    expect(shown).toContain('Watercolour');
+    // A pixel brush that is half of a pair shows once, under the pair's name.
+    expect(shown).toContain('Pencil');
+    expect(shown).not.toContain('Pixel pencil');
     // The count is in the open list, not on the button.
-    expect(document.querySelector('.pk-pop .pk-label')!.textContent).toContain(String(PIXEL_STARTERS.length));
+    expect(document.querySelector('.pk-pop .pk-label')!.textContent).toContain(String(P.brushesOnSide('pixel').length));
   });
 
   it('lights the brush in use, and says Custom pixel brush when it matches none', () => {
@@ -101,14 +102,14 @@ describe('the pixel side of the picker', () => {
     expect(getSoft().tools.airbrush.size).toBe(28);
   });
 
-  it('saves the pixel brush in use as a pixel brush, and the vector side never sees it', () => {
+  it('saves the pixel brush in use as a pixel brush, and the vector side lists it too, drawn through its translation', () => {
     act(() => setDab({ size: 17, spacing: 1.5 }));
     act(() => void P.saveCurrentAs('Fat dots'));
     const mine = P.myBrushes();
     expect(mine).toHaveLength(1);
     expect(mine[0]).toMatchObject({ name: 'Fat dots', tool: 'pixel' });
     expect(mine[0].pixel).toMatchObject({ kind: 'dab', dab: { size: 17, spacing: 1.5 } });
-    expect(P.brushesOnSide('vector').some((p) => p.name === 'Fat dots')).toBe(false);
+    expect(P.brushesOnSide('vector').some((p) => p.name === 'Fat dots')).toBe(true);
     expect(names2()).toBe('Fat dots');
   });
 
@@ -122,18 +123,19 @@ describe('the pixel side of the picker', () => {
     expect(P.currentPixelState().changed).toBe(false);
   });
 
-  it('steps through the pixel brushes with Next and Previous, wrapping', () => {
-    act(() => void P.applyPreset(PIXEL_STARTERS[0].id));
+  it('steps through the brushes with Next and Previous, wrapping', () => {
+    const list = P.brushesOnSide('pixel');
+    act(() => void P.applyPreset(list[0].id));
     P.stepBrush(-1);
-    expect(P.currentPixelState().activeId).toBe(PIXEL_STARTERS.at(-1)!.id);
+    expect(P.currentPixelState().activeId).toBe(list.at(-1)!.id);
     P.stepBrush(1);
-    expect(P.currentPixelState().activeId).toBe(PIXEL_STARTERS[0].id);
+    expect(P.currentPixelState().activeId).toBe(list[0].id);
   });
 
   it('keeps the brush as it was when you move between pixel tools', () => {
     act(() => setDab({ size: 17 }));
     act(() => store().setUi({ tool: 'charcoal' }));
-    expect(names2()).toBe('Compressed charcoal on paper');
+    expect(names2()).toBe('Compressed charcoal');
     act(() => store().setUi({ tool: 'pixel-brush' }));
     expect(getDab().size).toBe(17);
     expect(getDab().tip).toBe(DEFAULT_DAB.tip);

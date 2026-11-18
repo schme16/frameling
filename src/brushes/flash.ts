@@ -11,7 +11,7 @@ import { isPixelBrushTool, liveBrushTool, subscribeSpecs } from '../dab/live';
 import { mediumInfo } from '../dry/maths';
 import { pixelNameOf } from './pixelTipList';
 import { flashFor, type Flash, type Moment } from './parts';
-import { everyBrush, pickedBrushId, subscribeBrushes } from './presets';
+import { everyBrush, isSwapping, pickedBrushId, subscribeBrushes } from './presets';
 
 /** How long the tag and the lit rows stay. */
 export const FLASH_MS = 2200;
@@ -83,7 +83,8 @@ export function startBrushFlash(): () => void {
     if (pickedBrushId() === prev.id && state().brush === prev.brush && liveBrushTool() === prevTool && getDab() === prevDab && getDry().medium === prevMedium && effective() === prev.paper) return;
     const now = moment();
     // Moving to another tool is not a change of the brush (unless it picked another brush): start from here.
-    const f = liveBrushTool() === prevTool || pickedBrushId() !== prev.id ? flashFor(prev, now) : null;
+    // A swap to the other kind of layer puts a whole brush in at once: that is not a tip or a stick you changed.
+    const f = !isSwapping() && (liveBrushTool() === prevTool || pickedBrushId() !== prev.id) ? flashFor(prev, now) : null;
     prev = now;
     prevDab = getDab();
     prevMedium = getDry().medium;

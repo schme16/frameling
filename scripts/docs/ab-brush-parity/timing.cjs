@@ -7,14 +7,14 @@ const { L } = require('../ab-pixel-brush/_draw.cjs');
 const { HELPER } = require('../ab-soft-paint/_draw.cjs');
 const F = '__frameling';
 const IDS = ['mechanical', 'colour-pencil', 'sketch-pencil', 'gel', 'ballpoint', 'brush-pen', 'dip-pen', 'fine-marker', 'block-marker', 'brush-marker', 'tapered', 'round-brush', 'dry-brush', 'charcoal', 'oil-pastel', 'leaves', 'falling-leaves', 'paw-prints', 'dashed-line', 'broad', 'round-nib', 'pressure-pencil', 'pressure-spray', 'speckle', 'sprinkle', 'slash'];
-const PIXEL_ID = { 'sketch-pencil': 'sketch-pencil-medium', 'dry-brush': 'dry-brush-crayon', broad: 'broad-nib' };
 const run = (kind, ids) => `(async () => {
   const root = document.querySelector('.cv-root');
   const send = (type, x, y, p) => { const { zoom, panX, panY } = ${F}.store().get().ui; const r = root.getBoundingClientRect(); root.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'pen', isPrimary: true, clientX: r.left + x * zoom + panX, clientY: r.top + y * zoom + panY, pressure: p, button: 0, buttons: type === 'pointerup' ? 0 : 1 })); };
   const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const out = {};
   for (const v of ${JSON.stringify(ids)}) {
-    const id = ${kind === 'pixel' ? `'starter:px-' + (${JSON.stringify(PIXEL_ID)}[v] ?? v)` : `'starter:' + v`};
+    // One brush with two halves since piece 6: the same id on both kinds of layer, and the layer says which half goes in.
+    const id = 'starter:' + v;
     ${F}.run('brush.pick.' + id);
     await frame();
     let ms = 0;

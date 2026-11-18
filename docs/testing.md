@@ -216,8 +216,17 @@ The test mounts the vector Brush (every tip, Catch on paper on and off, a saved 
 every Soft paint kind, Chalk and charcoal) with every fold open, plus the brush list's drop down, and collects the ids. An id on
 one side only has to be in `parityGaps.ts`; an id in `parityGaps.ts` that is now on both sides has to come out.
 
-**Brushes.** Every vector starter and every pixel starter is either in `BRUSH_PAIRS` (the same job on both sides) or in
-`ONE_SIDED_VECTOR_BRUSHES` / `ONE_SIDED_PIXEL_BRUSHES`.
+**Brushes.** Every vector starter and every pixel starter is either in `BRUSH_PAIRS` (the same job on both sides), in
+`ONE_SIDED_VECTOR_BRUSHES` / `ONE_SIDED_PIXEL_BRUSHES` (made on one side only; the other half is a translation), or in `TRANSLATES_FINE` (made on one
+side, and the translation loses nothing). Since piece 6 the brush list is one list for both kinds of layer: the test checks it is the same list on both,
+that each pair appears once, and that every brush has both halves, made or worked out, and reads as a valid brush.
+
+**One brush that follows the layer** (piece 6). `test/brushes/translate.test.ts` holds `toPixel` and `toVector` (pure, best effort, round trip, never change what
+they are given) and the lines for what a kind of layer cannot draw. `test/brushes/pair.test.ts` is the `pair` field: reading, writing, old files and the merged
+starters. `test/brushes/follow.test.tsx` mounts nothing: it drives the store, picks a brush on one kind of layer, hops to the other and checks the half that goes
+in, that a changed brush stays changed, the tool, the ask-once question and that every starter is exactly itself straight after it is picked, on both kinds of layer.
+The parity test also mounts a vector panel with a pixel brush picked and a pixel panel with a vector brush picked, so the greyed controls (`src/brushes/Kept.tsx`)
+count as being on both sides.
 
 **Preset sheets and stroke times.** `scripts/brush-parity-presets.cjs` draws each new pixel brush beside the vector brush of the same name
 (same path, same pen pressure, on white, both at 100%), and `scripts/docs/ab-brush-parity/sheets.py` makes one sheet a group in
@@ -239,10 +248,16 @@ resets and Back to how it came on a pixel brush. `test/brushes/pixelParts.test.t
 `test/brushes/brushOnPixels.test.tsx` mounts the panel. `scripts/docs/ab-brush-parity/b-pixels.cjs` shoots the panel and five strokes at 800% and times a stroke, on an old
 and a new build (`bp-panel`, `bp-strokes`, `bp-time`; copy the file into the old checkout, run with `--only` and `--out`).
 
+**Pictures and times for the brush that follows the layer.** `scripts/docs/ab-brush-parity/follows.cjs` shoots the brush list on a vector layer and on a pixel layer, a
+clip of picking a paired brush and drawing on one kind of layer then the other, a brush showing what this layer cannot draw, the ask-once question and an imported
+brush (`--only follows-list-vector,follows-list-pixel,follows-clip,follows-kept,follows-kept-pixel,follows-ask,follows-import`, both themes, into
+`brand/ab/brush-parity/follows-layer/`). `follows-timing.cjs` times opening the list cold and warm on each kind of layer, hopping from one kind of layer to the other with
+a brush picked, and a stroke on each (`--only ft1`, `--renderer <dir>` for a before; run before and after alternately, at least three each).
+
 **Shrinking the list.** Each entry in `parityGaps.ts` has a line in plain words saying which piece of the plan clears it
 (`piece 9`, or `by design` for what stays one sided because vectors have shapes and pixels have pixels). When you close a gap the
-test fails until you take the entry out. For a control, give the other side's panel the same `control` id and delete the entry. For
-a brush, add a pair to `BRUSH_PAIRS` and delete its entry. A new control with no `control` id isn't seen, so give every new control
+test fails until you take the entry out. For a control, give the other side's panel the same `control` id (a greyed row with its reason counts) and delete the entry. For
+a brush, make its other half by hand, add a pair to `MERGED_PAIRS` (`src/brushes/pairs.ts`) and delete its entry. A new control with no `control` id isn't seen, so give every new control
 one. To see what the test found, run `PARITY_PRINT=1 npx vitest run test/brushes/parity.test.tsx`: it prints the ids on each
 side. The pen toggles (shown only once a pen has been used) and the name box for saving aren't covered yet.
 

@@ -7,19 +7,19 @@ import { specTool } from '../dab/spec';
 import { currentSide, everyBrush, pickedBrushId, revertActive } from './presets';
 import { NONE_CHANGED, partsOf, withPaperOf, withStickOf, withTipOf, type Parts } from './parts';
 import { pixelPartsOf, withPixelPaperOf, withPixelStickOf, withPixelTipOf } from './pixelParts';
-import type { BrushPreset } from './model';
+import { pixelHalf, vectorHalf, type BrushPreset } from './model';
 
-/** The saved brush that is picked on the vector Brush, as it was saved. */
+/** The brush that is picked, for the vector Brush: its vector half as it came (made, or worked out from its pixel half). */
 export const savedBrush = (): BrushPreset | undefined => {
   const id = pickedBrushId();
-  return id ? everyBrush().find((p) => p.id === id && p.tool === 'brush') : undefined;
+  return id ? everyBrush().find((p) => p.id === id) : undefined;
 };
 
-/** The saved pixel brush that is picked, as it was saved, while you are on a pixel brush tool of its kind. */
+/** The brush that is picked, for a pixel brush tool: it counts while you are on a tool of the kind its pixel half is. */
 export const savedPixelBrush = (): BrushPreset | undefined => {
   const id = pickedBrushId();
   const live = currentSpec();
-  return id && live ? everyBrush().find((p) => p.id === id && p.tool === 'pixel' && !!p.pixel && specTool(p.pixel) === specTool(live)) : undefined;
+  return id && live ? everyBrush().find((p) => p.id === id && specTool(pixelHalf(p)) === specTool(live)) : undefined;
 };
 
 /** The saved brush to compare with on the side you are on (the vector Brush's or a pixel brush's). */
@@ -29,15 +29,16 @@ export const savedForSide = (): BrushPreset | undefined => (currentSide() === 'p
 export const partsNow = (): Parts => {
   if (currentSide() === 'pixel') {
     const was = savedPixelBrush();
-    return was?.pixel ? pixelPartsOf(was.pixel, currentSpec()) : NONE_CHANGED;
+    return was ? pixelPartsOf(pixelHalf(was), currentSpec()) : NONE_CHANGED;
   }
   const was = savedBrush();
-  return was ? partsOf(was.brush, store().get().ui.brush) : NONE_CHANGED;
+  return was ? partsOf(vectorHalf(was), store().get().ui.brush) : NONE_CHANGED;
 };
 
 /** Puts one part of a pixel brush back: its spec changes with `back`, and the settings go where they live. */
 function backPixel(back: (live: NonNullable<ReturnType<typeof currentSpec>>, was: NonNullable<BrushPreset['pixel']>) => NonNullable<BrushPreset['pixel']>): void {
-  const was = savedPixelBrush()?.pixel;
+  const saved = savedPixelBrush();
+  const was = saved ? pixelHalf(saved) : undefined;
   const live = currentSpec();
   if (was && live) putSpec(back(live, was));
 }
@@ -60,7 +61,7 @@ export function resetTip(): boolean {
   }
   const was = savedBrush();
   if (!was || !partsNow().tip) return none('tip');
-  store().setUi((u) => ({ brush: withTipOf(u.brush, was.brush) }));
+  store().setUi((u) => ({ brush: withTipOf(u.brush, vectorHalf(was)) }));
   return true;
 }
 
@@ -72,7 +73,7 @@ export function resetStick(): boolean {
   }
   const was = savedBrush();
   if (!was || !partsNow().stick) return none('stick');
-  store().setUi((u) => ({ brush: withStickOf(u.brush, was.brush) }));
+  store().setUi((u) => ({ brush: withStickOf(u.brush, vectorHalf(was)) }));
   return true;
 }
 
@@ -84,6 +85,6 @@ export function resetPaper(): boolean {
   }
   const was = savedBrush();
   if (!was || !partsNow().paper) return none('paper');
-  store().setUi((u) => ({ brush: withPaperOf(u.brush, was.brush) }));
+  store().setUi((u) => ({ brush: withPaperOf(u.brush, vectorHalf(was)) }));
   return true;
 }

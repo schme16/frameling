@@ -192,6 +192,10 @@ export const STILL_LOAD = {
   // entries are the Lip sync and Clip flow panels under View > Panels, left out until animation is added.
   // 18 November 2026, brush-parity piece 3: +26 palette and +26 menu on both sides, twenty-six more ready-made brushes (21 pixel
   // and 5 vector, same names on both sides), each one a command. Nothing to do with animation, so the gap is unchanged.
-  still: { palette: 622, menu: 753, animateMenu: 8 },
-  animated: { palette: 663, menu: 879, animateMenu: 123 },
+  // 18 November 2026, brush-parity piece 6: -41 palette and -40 menu on both sides. The 41 pixel brushes that are half of a
+  // pair (Chalk on paper and Chalk, Pixel stars and Stars, and so on) are one brush now, so their commands are gone, and
+  // Show what this layer cannot draw of the brush is one new menu entry (greyed until a brush is picked, so no palette
+  // change). Nothing to do with animation, so the gap is unchanged.
+  still: { palette: 581, menu: 713, animateMenu: 8 },
+  animated: { palette: 622, menu: 839, animateMenu: 123 },
 };

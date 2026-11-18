@@ -46,6 +46,7 @@ import {
   useRowStyle,
 } from './picker';
 import { applyPreset, brushesOnSide, brushesVersion, startNaming, stateFor, useBrushPresets } from './presets';
+import { madeOn, pixelHalf, vectorHalf } from './model';
 import { customOf, fixedActiveId, fixedHint, fixedRows, FIXED_WORDS, isFixedSide, parseTipId, type PickerSide } from './tipList';
 import { pickStick, pickTip } from './tips';
 import { usePixelLive } from './usePixelLive';
@@ -119,13 +120,18 @@ interface RowProps {
   hint?: string;
   /** A pen tip row: no star (a short fixed list needs no favourites) and no size number. */
   tips?: boolean;
+  /** Which kind of layer the list is for: a row draws the brush's half for it. */
+  side: PickerSide;
   onPick: (id: string) => void;
   onStar: (id: string) => void;
 }
 
-const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpec, showGroup, hint, tips = false, onPick, onStar }: RowProps) {
-  const brush = live ?? b.brush;
-  const spec = b.tool === 'pixel' ? (liveSpec ?? b.pixel) : undefined;
+const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpec, showGroup, hint, tips = false, side, onPick, onStar }: RowProps) {
+  // A brush list row draws the half the kind of layer uses (worked out when the brush was made for the other kind); the pen tip rows are their own.
+  const forLayer = !tips && (side === 'vector' || side === 'pixel');
+  const brush = live ?? (forLayer ? vectorHalf(b) : b.brush);
+  const spec = forLayer ? (side === 'pixel' ? (liveSpec ?? pixelHalf(b)) : undefined) : b.tool === 'pixel' ? (liveSpec ?? b.pixel) : undefined;
+  const near = forLayer && !madeOn(b, side as 'vector' | 'pixel') ? ` Made for ${side === 'pixel' ? 'vectors' : 'pixels'}, drawn as close as ${side === 'pixel' ? 'pixels' : 'vectors'} can here.` : '';
   const tip = rows === 'tip';
   // A pen tip row does what the Brush tip command of the same name does (every stamp shape is the Stamp tip).
   const tipKind = tips ? parseTipId(b.id) : null;
@@ -140,7 +146,7 @@ const Row = memo(function Row({ b, idx, on, hot, fav, rows, scale, live, liveSpe
       data-on={on}
       data-hot={hot}
       data-command={command}
-      title={hint ?? `${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}`}
+      title={hint ?? `${b.name}, ${groupOf(b)}${b.builtin ? ', comes with Frameling' : ''}.${near}`}
       onClick={() => onPick(b.id)}
     >
       {tip && !tips && <Tip brush={brush} spec={spec} scale={scale} on={on} size />}
@@ -263,9 +269,9 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   }, [anchor, onClose]);
 
   const sections = useMemo(() => {
-    const built = buildSections({ all, favourites: favs, recent, activeId, opened, query });
+    const built = buildSections({ all, favourites: favs, recent, activeId, opened, query, pixelFirst: side === 'pixel' });
     return tips ? built.filter((s) => s.kind === 'group' || s.kind === 'found') : built;
-  }, [all, favs, recent, activeId, opened, query, tips]);
+  }, [all, favs, recent, activeId, opened, query, tips, side]);
   const items = useMemo<Item[]>(() => (big ? flatten(sections) : all.map((b) => ({ key: rowKey('flat', b.id), kind: 'row' as const, section: 'flat', brush: b }))), [big, sections, all]);
   const index = useMemo(() => new Map(items.map((i, n) => [i.key, n])), [items]);
   const hotKey = hot && index.has(hot) ? hot : startKey(items, searching ? null : activeId);
@@ -317,7 +323,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
     if (e.key !== 'Tab' && e.key !== 'Escape') e.stopPropagation();
   };
 
-  const allKeys = foldableKeys({ all }).filter((k) => !tips || k.startsWith('group:'));
+  const allKeys = foldableKeys({ all, pixelFirst: side === 'pixel' }).filter((k) => !tips || k.startsWith('group:'));
   const allOpen = allKeys.every((k) => sections.find((s) => s.key === k)?.open);
   const hintFor = (b: import('./model').BrushPreset): string | undefined => (tips ? fixedHint(side, b.id) : undefined);
   const hint: Record<string, string> = { favourites: 'Star a brush and it shows up here.', recent: 'The brushes you use show up here.' };
@@ -326,7 +332,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
   const rowFor = (s: Section, b: import('./model').BrushPreset) => {
     const key = rowKey(s.key, b.id);
     const on = b.id === activeId;
-    return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={s.kind === 'found'} hint={hintFor(b)} tips={tips} onPick={pick} onStar={star} />;
+    return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={s.kind === 'found'} hint={hintFor(b)} tips={tips} side={side} onPick={pick} onStar={star} />;
   };
 
   let body: ReactNode;
@@ -336,7 +342,7 @@ export function Panel({ anchor, side = 'vector', onClose, onPicked }: { anchor: 
         {all.map((b) => {
           const key = rowKey('flat', b.id);
           const on = b.id === activeId;
-          return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={false} hint={hintFor(b)} tips={tips} onPick={pick} onStar={star} />;
+          return <Row key={key} b={b} idx={index.get(key) ?? -1} on={on} hot={key === hotKey} fav={favSet.has(b.id)} rows={rows} scale={scale} live={on ? live : undefined} liveSpec={on ? liveSpec : undefined} showGroup={false} hint={hintFor(b)} tips={tips} side={side} onPick={pick} onStar={star} />;
         })}
       </div>
     );

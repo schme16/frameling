@@ -73,6 +73,7 @@ export const HISTORY: History = {
     { on: '2026-11-17', n: 588, why: 'sketch-and-ink: nine more ready-made pixel brushes in a new Sketch and ink group (inking pens, pencils, a felt marker, a dry bristle brush, a canvas brush), each one a palette command to use it, like the sixteen pixel-brush-engine added. Nothing came out instead: a brush in the library is a command so it can be found by name.' },
     { on: '2026-11-17', n: 596, why: 'hide-animation-only-ui: the lip sync commands, the Draw on and Clip flow panels and the motion tools used to be greyed on a still and now stay usable, because choosing one offers Add animation and carries on to it. Eight more commands that work, none of them in the way: they are out of the menus, the rail and the panels until animation is added.' },
     { on: '2026-11-17', n: 622, why: 'brush-parity piece 3: twenty-six more ready-made brushes with the same names on both sides (the pixel Mechanical pencil, Gel pen, Leaves, Paw prints and the rest, and the vector Slash, Speckle, Sprinkle, Pressure pencil and Pressure spray), each one a palette command to use it. A brush has nothing to do with animation, so the gap to a drawing with animation is unchanged.' },
+    { on: '2026-11-18', n: 581, why: 'brush-parity piece 6: forty-one fewer brush commands on both sides, because a pixel brush and a vector brush that do the same job are one brush now, with two halves (Chalk on paper is Chalk, Pixel stars is Stars). The new Show what this layer cannot draw of the brush command is greyed until a brush is picked, so it adds nothing here, and a brush has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.still.menu': [
     { on: D, n: 782, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -95,6 +96,7 @@ export const HISTORY: History = {
     { on: '2026-11-17', n: 729, why: 'taper: Thin to a point at the ends is one more switch in the Pixel brush submenu under Soft paint, a pixel layer brush with nothing to do with animation, so Draw is untouched.' },
     { on: '2026-11-17', n: 727, why: 'hide-animation-only-ui: Lip sync, Draw on and Clip flow panels are not offered under View > Panels on a still (two entries fewer than before); they come back with animation.' },
     { on: '2026-11-17', n: 753, why: 'brush-parity piece 3: twenty-six more ready-made brushes with the same names on both sides (the pixel Mechanical pencil, Gel pen, Leaves, Paw prints and the rest, and the vector Slash, Speckle, Sprinkle, Pressure pencil and Pressure spray), each one a palette command to use it. A brush has nothing to do with animation, so the gap to a drawing with animation is unchanged.' },
+    { on: '2026-11-18', n: 713, why: 'brush-parity piece 6: forty-one fewer brush entries in the brush lists on both sides (a pixel brush and a vector brush that do the same job are one brush now, with two halves), and one new entry, Show what this layer cannot draw of the brush, under Saved brushes. Nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.still.animateMenu': [{ on: D, n: 8, why: BASE }],
   'STILL_LOAD.animated.palette': [
@@ -109,6 +111,7 @@ export const HISTORY: History = {
     { on: D, n: 628, why: 'diamond-gradient: the same two as a still gains, because gradients have nothing to do with animation, so the gap between the two sides does not move.' },
     { on: '2026-11-17', n: 637, why: 'sketch-and-ink: the same nine as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: '2026-11-17', n: 663, why: 'brush-parity piece 3: twenty-six more ready-made brushes with the same names on both sides (the pixel Mechanical pencil, Gel pen, Leaves, Paw prints and the rest, and the vector Slash, Speckle, Sprinkle, Pressure pencil and Pressure spray), each one a palette command to use it. A brush has nothing to do with animation, so the gap to a drawing with animation is unchanged.' },
+    { on: '2026-11-18', n: 622, why: 'brush-parity piece 6: forty-one fewer brush commands on both sides, because a pixel brush and a vector brush that do the same job are one brush now, with two halves (Chalk on paper is Chalk, Pixel stars is Stars). The new Show what this layer cannot draw of the brush command is greyed until a brush is picked, so it adds nothing here, and a brush has nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.menu': [
     { on: D, n: 900, why: 'Baseline when the ratchet was built, taken from the number as it stood; the earlier steps are in the comments in known-gaps.ts.' },
@@ -130,6 +133,7 @@ export const HISTORY: History = {
     { on: '2026-11-17', n: 852, why: 'sketch-and-ink: the same nine as a still gains, so the gap between the two sides does not move.' },
     { on: '2026-11-17', n: 853, why: 'taper: the same one as a still gains, because a brush has nothing to do with animation, so the gap between the two sides does not move.' },
     { on: '2026-11-17', n: 879, why: 'brush-parity piece 3: twenty-six more ready-made brushes with the same names on both sides (the pixel Mechanical pencil, Gel pen, Leaves, Paw prints and the rest, and the vector Slash, Speckle, Sprinkle, Pressure pencil and Pressure spray), each one a palette command to use it. A brush has nothing to do with animation, so the gap to a drawing with animation is unchanged.' },
+    { on: '2026-11-18', n: 839, why: 'brush-parity piece 6: forty-one fewer brush entries in the brush lists on both sides (a pixel brush and a vector brush that do the same job are one brush now, with two halves), and one new entry, Show what this layer cannot draw of the brush, under Saved brushes. Nothing to do with animation, so the gap between the two sides does not move.' },
   ],
   'STILL_LOAD.animated.animateMenu': [{ on: D, n: 123, why: BASE }],
 };

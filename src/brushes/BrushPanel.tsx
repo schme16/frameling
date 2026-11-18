@@ -1,9 +1,10 @@
 // The Brush options' skeleton, one for both sides, so the vector Brush and the pixel brushes read the same top to bottom:
-// the big preview, the titled Brush picker, the parts of the brush (Tip, Stick), the paper, what the tip in use has, Size,
+// the big preview, the titled Brush picker (with a line for what this kind of layer cannot draw of the brush), the parts of the brush (Tip, Stick), the paper, what the tip in use has, Size,
 // what the brush has beside its size (hardness, flow, spacing), then Save and Share, then the folds. Each side hands in its own pieces; what the pieces are and where they go is here once.
 // The test (test/brushes/panelSkeleton.test.tsx) holds both sides to this order.
 import type { ReactNode } from 'react';
 import { BrushPresetActions, BrushPresetPicker } from './BrushPresetRow';
+import { KeptNote } from './Kept';
 import { LitRow, PreviewFlash } from './PartsOptions';
 import type { Side } from './presets';
 
@@ -32,6 +33,7 @@ export function BrushPanel({ side, preview, parts, paper, controls, size, afterS
       <LitRow part="brush">
         <BrushPresetPicker title="Brush" side={side} />
       </LitRow>
+      <KeptNote side={side} />
       {parts}
       {paper}
       {controls}

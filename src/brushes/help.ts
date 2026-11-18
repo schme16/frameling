@@ -7,7 +7,7 @@ registerHelpTopics([
     media: 'brush-parts.mp4',
     title: 'A brush, its tip, its stick and its paper',
     section: 'Drawing',
-    summary: 'What each one is and how they fit: a brush holds a tip, a chalk or charcoal tip holds a stick, and the paper is the sheet\'s. See what you changed, put it back in one press, and watch the preview name what just changed.',
+    summary: 'What each one is and how they fit: a brush holds a tip, a chalk or charcoal tip holds a stick, and the paper is the sheet\'s. See what you changed, put it back in one press, and keep it changed when you hop from one kind of layer to the other.',
     keywords: ['brush', 'tip', 'stick', 'paper', 'parts of this brush', 'parts', 'changed', 'as it comes', 'back to how it came', 'revert', 'reset', 'undo changes', 'put it back', 'original', 'what is a stick', 'what is a tip', 'what is a brush', 'flash', 'tag', 'which is which', 'confusing'],
   },
   {
@@ -16,8 +16,8 @@ registerHelpTopics([
     media: 'brush-presets.mp4',
     title: 'Saved brushes',
     section: 'Drawing',
-    summary: 'Save the brush you like by name, and pick it again in one click. Over sixty come ready: pencils, pens, markers, paint, chalk, charcoal, watercolour, stamps and more.',
-    keywords: ['brush', 'preset', 'presets', 'saved brush', 'named brush', 'ink', 'marker', 'pencil', 'tapered', 'pencils', 'pens', 'markers', 'paint', 'pastel', 'crayon', 'gouache', 'oil paint', 'dry brush', 'g-pen', 'comic pen', 'brush pen', 'dip pen', 'felt tip', 'stipple', 'spatter', 'sparkles', 'airbrush', 'highlighter', 'calligraphy', 'built-in brushes', 'chalk', 'charcoal', 'watercolour', 'leaves', 'save brush', 'favourite', 'favorite', 'share brushes', 'swap brush', 'size', 'smoothing'],
+    summary: 'Save the brush you like by name, and pick it again in one click. A hundred come ready, and the brush you pick follows you from pixel layers to vector layers and back.',
+    keywords: ['brush', 'preset', 'presets', 'saved brush', 'named brush', 'ink', 'marker', 'pencil', 'tapered', 'pencils', 'pens', 'markers', 'paint', 'pastel', 'crayon', 'gouache', 'oil paint', 'dry brush', 'g-pen', 'comic pen', 'brush pen', 'dip pen', 'felt tip', 'stipple', 'spatter', 'sparkles', 'airbrush', 'highlighter', 'calligraphy', 'built-in brushes', 'chalk', 'charcoal', 'watercolour', 'leaves', 'save brush', 'favourite', 'favorite', 'share brushes', 'swap brush', 'size', 'smoothing', 'follows me', 'pixel layer', 'vector layer', 'brush on a pixel layer', 'brush on a vector layer', 'same brush', 'one list', 'kept', 'greyed', 'cannot draw', 'looks different'],
   },
   {
     id: 'brush-import',
@@ -25,7 +25,7 @@ registerHelpTopics([
     media: 'brush-import.png',
     title: 'Brushes from other programs',
     section: 'Drawing',
-    summary: 'Bring in brushes from Photoshop (.abr), GIMP (.gbr, .gih, .vbr), Krita (.kpp, .bundle) or Procreate (.brush, .brushset), see which ones come in whole, and keep the ones you want.',
+    summary: 'Bring in brushes from Photoshop (.abr), GIMP (.gbr, .gih, .vbr), Krita (.kpp, .bundle) or Procreate (.brush, .brushset), see which ones come in whole, and use them on pixel layers and vector layers.',
     keywords: ['brush', 'import', 'photoshop', 'abr', 'gimp', 'gbr', 'gih', 'vbr', 'krita', 'kpp', 'procreate', 'brushset', 'brush set', 'download brushes', 'add brushes', 'free brushes', 'other programs', 'sampled brush', 'brush pack'],
   },
   {
@@ -52,7 +52,7 @@ registerHelpTopics([
     media: 'brush-picker.mp4',
     title: 'The brush picker: find a brush in a big library',
     section: 'Drawing',
-    summary: 'One button drops down every brush with a stroke across it. Search, groups, favourites and recent keep even hundreds of brushes quick to reach.',
+    summary: 'One button drops down every brush with a stroke across it, the same list on pixel and vector layers. Search, groups, favourites and recent keep even hundreds of brushes quick to reach.',
     keywords: ['brush picker', 'picker', 'dropdown', 'drop down', 'brush library', 'many brushes', 'hundreds of brushes', 'brush pack', 'search brushes', 'groups', 'folders', 'favourites', 'favorites', 'star', 'recent brushes', 'two columns', 'row size', 'brush list', 'choose a brush', 'alt+p', 'brush thumbnail', 'brush preview', 'stroke colour'],
   },
 ]);
