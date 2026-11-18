@@ -61,8 +61,9 @@ function dabTool(): Tool {
 
   return {
     id: PIXEL_BRUSH_TOOL,
-    group: 'extras',
-    groupAt: 12,
+    group: 'draw',
+    groupAt: 1.5,
+    stack: 'brush',
     label: 'Pixel brush',
     commandLabel: 'Draw with the pixel brush (tips, spacing, scatter)',
     icon: 'pixel-brush',

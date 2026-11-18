@@ -70,3 +70,48 @@ export function placePopup(ask: PopupAsk): PopupPlace {
   const bottom = Math.max(margin, win.h - anchor.top + gap);
   return { left, width, bottom, maxHeight: Math.min(innerH, win.h - margin - bottom), opens: 'above' };
 }
+
+export interface BesideAsk {
+  /** The button it comes out of, in window coordinates. */
+  anchor: Box;
+  win: { w: number; h: number };
+  /** The width it would like. */
+  width: number;
+  /** The height it would like, or what its content comes to. */
+  height: number;
+  /** Which side of the button it would like to open on. It takes the other side when there is no room on this one and there is on that. */
+  prefer: 'right' | 'left';
+  margin?: number;
+  gap?: number;
+}
+
+export interface BesidePlace {
+  left: number;
+  top: number;
+  width: number;
+  /** The tallest it may be: the rows scroll inside when there are more than fit. */
+  maxHeight: number;
+  side: 'right' | 'left';
+}
+
+/**
+ * Where a pull-out goes when it comes out of a button down the side of the window (the tool rail): beside the button, level
+ * with its top, moved up when it would run off the bottom, on the other side when there is no room on the one it prefers,
+ * and never taller than the window (the rows scroll inside). Pure, like placePopup.
+ */
+export function placeBeside(ask: BesideAsk): BesidePlace {
+  const margin = ask.margin ?? POPUP_MARGIN;
+  const gap = ask.gap ?? POPUP_GAP;
+  const { anchor, win } = ask;
+  const width = Math.max(0, Math.min(ask.width, win.w - margin * 2));
+  const roomRight = win.w - margin - (anchor.right + gap);
+  const roomLeft = anchor.left - gap - margin;
+  const fits = (room: number) => room >= width;
+  const side: 'right' | 'left' = ask.prefer === 'right' ? (fits(roomRight) || !fits(roomLeft) ? 'right' : 'left') : fits(roomLeft) || !fits(roomRight) ? 'left' : 'right';
+  const rawLeft = side === 'right' ? anchor.right + gap : anchor.left - gap - width;
+  const left = Math.max(margin, Math.min(rawLeft, win.w - margin - width));
+  const maxHeight = Math.max(0, win.h - margin * 2);
+  const height = Math.min(Math.max(0, ask.height), maxHeight);
+  const top = Math.max(margin, Math.min(anchor.top, win.h - margin - height));
+  return { left, top, width, maxHeight, side };
+}

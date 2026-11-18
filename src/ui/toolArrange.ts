@@ -9,6 +9,7 @@
 // Pixel lasso (and the other ways of picking) share one place, and the one for your layer shows (a slot, see slotMates).
 
 import type { LayerKind } from '../core/format';
+import { cleanStacks, defaultStacks, type ToolStack } from './toolStacks';
 
 export interface ToolGroup {
   id: string;
@@ -19,6 +20,8 @@ export interface ToolGroup {
   hidden?: string[];
   /** Folded into one button, with the rest of the group behind it. */
   fold?: boolean;
+  /** Runs of tools next to each other that share one button, each with a pull-out (see toolStacks.ts). */
+  stacks?: ToolStack[];
 }
 
 /** The groups the rail starts with. A tool says which one it starts in (`group`) and where (`groupAt`) when it is registered. */
@@ -26,6 +29,8 @@ export const DEFAULT_GROUPS: { id: string; name: string }[] = [
   // Select is first: picking things up and moving them is the thing you reach for most. Only the order changed, never an id.
   { id: 'select', name: 'Select' },
   { id: 'draw', name: 'Draw' },
+  // What moves colour about on a pixel layer: smudge, blur, sharpen and the clone stamp, in one stack.
+  { id: 'retouch', name: 'Retouch' },
   // The id is the old one (it was "Colour and pixel extras"), so a rail saved with it still reads right. Shade, Dither and Spray
   // are colour tools too: they change the colour of pixels, and they sit here on a pixel layer so the strip stays put.
   { id: 'extras', name: 'Colour' },
@@ -42,6 +47,8 @@ export interface ToolRef {
   groupAt?: number;
   /** Tools with the same slot share one place on the rail (the Lasso and the Pixel lasso). */
   slot?: string;
+  /** The stack it starts in: tools next to each other with the same stack share one button and a pull-out (toolStacks.ts). */
+  stack?: string;
 }
 
 /**
@@ -52,13 +59,22 @@ export const BUILTIN_RAILS: Record<string, ToolGroup[]> = {
   // Select first, then drawing, colour, shapes (the pen and point editing are in there too), rig, view.
   draw: DEFAULT_GROUPS.map((g) => ({ id: g.id, tools: [] })),
   // Select first, then drawing, rig and motion straight after, then shapes (with the pen), colour and view.
-  animate: ['select', 'draw', 'rig', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
+  animate: ['select', 'draw', 'retouch', 'rig', 'shapes', 'extras', 'view'].map((id) => ({ id, tools: [] })),
   // Pixel select first, then the pixel tools: draw with the eyedropper in reach, shade, dither, then shapes; the
   // vector-only tools (the pen and point editing join Shapes, then rig) come after.
   pixel: [
     { id: 'select', name: 'Select', tools: ['pixel-select', 'pixel-select-lasso', 'pixel-select-polygon', 'pixel-select-magnetic', 'pixel-select-wand', 'transform'] },
-    { id: 'draw', tools: ['pencil', 'eraser', 'fill', 'eyedropper'] },
-    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'gradient', 'spray', 'soft-brush', 'airbrush', 'highlighter', 'soft-eraser', 'smudge', 'charcoal', 'pixel-brush', 'clone-stamp', 'blur-brush', 'sharpen-brush'] },
+    // The Pixel rail has no Brush (the Pencil is its pixel brush), so the Brushes stack starts with the Soft brush.
+    {
+      id: 'draw',
+      tools: ['pencil', 'soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush', 'eraser', 'soft-eraser', 'fill', 'eyedropper'],
+      stacks: [
+        { id: 'brush', tools: ['soft-brush', 'airbrush', 'highlighter', 'charcoal', 'pixel-brush'] },
+        { id: 'eraser', tools: ['eraser', 'soft-eraser'] },
+      ],
+    },
+    { id: 'pixel', name: 'Pixel tools', tools: ['shade', 'dither', 'gradient', 'spray'] },
+    { id: 'retouch', tools: ['smudge', 'blur-brush', 'sharpen-brush', 'clone-stamp'], stacks: [{ id: 'retouch', tools: ['smudge', 'blur-brush', 'sharpen-brush', 'clone-stamp'] }] },
     { id: 'shapes', tools: ['line', 'rect', 'ellipse', 'polygon', 'star'] },
     { id: 'view', tools: ['hand', 'zoom'] },
     { id: 'extras', tools: [] },
@@ -114,9 +130,23 @@ export function sanitizeGroups(raw: unknown, anchors = false): ToolGroup[] | und
     seenGroups.add(r.id);
     const name = cleanGroupName(r.name);
     const hidden = cleanHidden(r.hidden, tools);
-    out.push({ id: r.id, ...(name ? { name } : {}), tools, ...(hidden.length ? { hidden } : {}), ...(r.fold === true ? { fold: true } : {}) });
+    const stacks = cleanStacks(tools, readStacks(r.stacks));
+    out.push({ id: r.id, ...(name ? { name } : {}), tools, ...(hidden.length ? { hidden } : {}), ...(r.fold === true ? { fold: true } : {}), ...(stacks.length ? { stacks } : {}) });
   }
   return out.length ? out : undefined;
+}
+
+/** Stacks read from a saved rail: only well formed ones (cleanStacks then keeps the ones that still hold up). */
+function readStacks(raw: unknown): ToolStack[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ToolStack[] = [];
+  for (const s of raw.slice(0, 12)) {
+    if (!s || typeof s !== 'object' || Array.isArray(s)) continue;
+    const r = s as Record<string, unknown>;
+    if (!isId(r.id) || !Array.isArray(r.tools)) continue;
+    out.push({ id: r.id, tools: r.tools.filter(isId).slice(0, 24) });
+  }
+  return out;
 }
 
 /** The hidden list of a group made safe: only tools that are in the group, each once, in the group's order. */
@@ -159,7 +189,11 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
   const have = new Set(ids);
   const groups: ToolGroup[] = [];
   const placed = new Set<string>();
+  // Groups that start fresh (a default order with no tools of its own, or a group the tools made) start with the stacks their tools name.
+  // A group someone saved with its tools keeps just what it was saved with, so an arrangement they made is never regrouped for them.
+  const fresh = new Set<string>();
   for (const g of saved ?? []) {
+    if (!g.tools.length) fresh.add(g.id);
     const tools = g.tools.filter((t) => have.has(t) && !placed.has(t));
     tools.forEach((t) => placed.add(t));
     // A group saved with no tools is an anchor (a default order): it stays where it is and the tools that start there fill it.
@@ -177,6 +211,7 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
     if (!g) {
       const meta = gid === OTHER_GROUP.id ? OTHER_GROUP : DEFAULT_GROUPS.find((x) => x.id === gid)!;
       g = { id: gid, name: meta.name, tools: [] };
+      fresh.add(gid);
       // Where it goes among the groups already there: before the first one that ranks after it. A saved rail keeps the old ranking.
       const order = saved?.length ? LEGACY_ORDER : undefined;
       const at = groups.findIndex((x) => rankOfGroup(x.id, order) > rankOfGroup(gid, order));
@@ -189,7 +224,15 @@ export function resolveGroups(saved: ToolGroup[] | undefined, tools: ToolRef[]):
   // The tools of a slot go away and come back as one.
   return bindSlots(groups, mates)
     .map((g) => withHidden(g, g.tools, g.hidden?.flatMap((t) => mates(t))))
+    .map((g) => withStacks(g, fresh.has(g.id) && !g.stacks ? defaultStacks(g.tools, (t) => ref.get(t)?.stack) : g.stacks))
     .filter((g) => g.tools.length);
+}
+
+/** The group with these stacks, the ones that hold up (see cleanStacks). */
+function withStacks(g: ToolGroup, stacks: ToolStack[] | undefined): ToolGroup {
+  const { stacks: _old, ...rest } = g;
+  const keep = cleanStacks(g.tools, stacks);
+  return keep.length ? { ...rest, stacks: keep } : rest;
 }
 
 /** The group with its `hidden` list cut to the tools it holds (and dropped when none is left). */
@@ -339,7 +382,13 @@ export function renameGroup(groups: ToolGroup[], id: string, name: string): Tool
 
 /** The arrangement with only the tools that show now; groups left empty are dropped. */
 export function visibleGroups(groups: ToolGroup[], visible: (id: string) => boolean): ToolGroup[] {
-  return groups.map((g) => ({ ...g, tools: g.tools.filter(visible) })).filter((g) => g.tools.length);
+  return groups
+    .map((g) => {
+      const { stacks, ...rest } = g;
+      const kept = (stacks ?? []).map((s) => ({ id: s.id, tools: s.tools.filter(visible) })).filter((s) => s.tools.length > 1);
+      return { ...rest, tools: g.tools.filter(visible), ...(kept.length ? { stacks: kept } : {}) };
+    })
+    .filter((g) => g.tools.length);
 }
 
 /** Where a tool can be put: into a group (before a tool, or at the end), or into a group of its own. */

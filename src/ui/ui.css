@@ -784,7 +784,8 @@ kbd {
   z-index: 50;
   display: flex;
   flex-direction: column;
-  min-width: 150px;
+  min-width: 190px;
+  overflow-y: auto;
   padding: 4px;
   gap: 2px;
   background: var(--panel);
@@ -826,6 +827,22 @@ kbd {
 .ui-tool-fly-item.is-chosen {
   background: var(--chosen-bg);
   color: var(--chosen-fg);
+}
+.ui-tool-fly-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ui-tool-fly-name small {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.ui-tool-fly-keys {
+  margin-left: auto;
+  padding-left: 10px;
+  opacity: 0.75;
+  font-size: 11px;
 }
 
 /* Group names above the groups (Group names: Show), and the same row when the tools are being changed. */

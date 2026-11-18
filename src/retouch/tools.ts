@@ -44,9 +44,9 @@ interface Spec {
 }
 
 export const RETOUCH_SPECS: Spec[] = [
-  { kind: 'clone', id: CLONE_TOOL, label: 'Clone stamp', commandLabel: 'Copy part of the picture as you paint (Clone stamp)', key: 'Alt+Shift+S', icon: 'clone-stamp', groupAt: 13, order: 34, help: 'clone-stamp', undo: 'Clone', what: 'The clone stamp' },
-  { kind: 'blur', id: BLUR_TOOL, label: 'Blur brush', commandLabel: 'Soften the picture with a brush (Blur brush)', key: 'Alt+Shift+U', icon: 'blur-brush', groupAt: 14, order: 35, help: 'blur-sharpen-brush', undo: 'Blur', what: 'The blur brush' },
-  { kind: 'sharpen', id: SHARPEN_TOOL, label: 'Sharpen brush', commandLabel: 'Crisp up the picture with a brush (Sharpen brush)', key: 'Alt+Shift+Y', icon: 'sharpen-brush', groupAt: 15, order: 36, help: 'blur-sharpen-brush', undo: 'Sharpen', what: 'The sharpen brush' },
+  { kind: 'clone', id: CLONE_TOOL, label: 'Clone stamp', commandLabel: 'Copy part of the picture as you paint (Clone stamp)', key: 'Alt+Shift+S', icon: 'clone-stamp', groupAt: 3, order: 34, help: 'clone-stamp', undo: 'Clone', what: 'The clone stamp' },
+  { kind: 'blur', id: BLUR_TOOL, label: 'Blur brush', commandLabel: 'Soften the picture with a brush (Blur brush)', key: 'Alt+Shift+U', icon: 'blur-brush', groupAt: 1, order: 35, help: 'blur-sharpen-brush', undo: 'Blur', what: 'The blur brush' },
+  { kind: 'sharpen', id: SHARPEN_TOOL, label: 'Sharpen brush', commandLabel: 'Crisp up the picture with a brush (Sharpen brush)', key: 'Alt+Shift+Y', icon: 'sharpen-brush', groupAt: 2, order: 36, help: 'blur-sharpen-brush', undo: 'Sharpen', what: 'The sharpen brush' },
 ];
 
 const isAligned = (): boolean => currentChoice<CloneAlign>(CLONE_ALIGN_CHOICE) === 'aligned';
@@ -80,8 +80,9 @@ function retouchTool(spec: Spec): Tool {
 
   return {
     id: spec.id,
-    group: 'extras',
+    group: 'retouch',
     groupAt: spec.groupAt,
+    stack: 'retouch',
     label: spec.label,
     commandLabel: spec.commandLabel,
     icon: spec.icon,

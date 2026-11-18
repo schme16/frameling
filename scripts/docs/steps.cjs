@@ -176,6 +176,16 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       await sleep(30);
       send({ type: 'mouseUp', x: r[0], y: r[1], button: 'left', clickCount: 1 });
       await sleep(s.after ?? 80);
+    } else if (s.holdOn) {
+      // Press the middle of an element (with optional `text`), hold for `hold` ms (a press and hold that opens a pull-out), then let go.
+      const r = await wc.executeJavaScript(`(() => { const t = ${JSON.stringify(s.text ?? null)}; const el = [...document.querySelectorAll(${JSON.stringify(s.holdOn)})].find((e) => !t || e.textContent.trim() === t || e.getAttribute('aria-label') === t); const b = el?.getBoundingClientRect(); return b && [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]; })()`);
+      if (!r) throw new Error(`holdOn: nothing for ${s.holdOn} ${s.text ?? ''}`);
+      send({ type: 'mouseMove', x: r[0], y: r[1] });
+      await sleep(s.pause ?? 200);
+      send({ type: 'mouseDown', x: r[0], y: r[1], button: 'left', clickCount: 1 });
+      await sleep(s.hold ?? 700);
+      send({ type: 'mouseUp', x: r[0], y: r[1], button: 'left', clickCount: 1 });
+      await sleep(s.after ?? 400);
     } else if (s.dragOn) {
       // Drag from the middle of one element to the middle of another ("dragOn" and "to" are selectors, with optional
       // "text" and "toText"), gliding slowly so a clip shows it. "toDx" and "toDy" shift the end point; "hold" waits before letting go.

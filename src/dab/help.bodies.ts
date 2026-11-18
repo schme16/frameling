@@ -2,7 +2,7 @@
 export const bodies: Record<string, string> = {
   'pixel-brush': `The **Pixel brush** draws a line as a row of **dabs**: one small stamp after another along the way you drag. You shape the stamp (its **tip**), how far apart the stamps go (the **spacing**), and whether they wander off the line (**scatter**). It works on **pixel layers**, and it is the quickest way to a pencil, a chunky marker, a chisel, a dotted line or a trail of stars.
 
-**Draw with it:** pick the **Pixel brush** (**Alt+Shift+N**), choose a colour and drag. Or open the [brush picker](help:brush-picker) under the preview and pick one that comes ready. The options read like the Brush's: see [parts of a brush](help:brush-parts). The cursor is the real shape of the tip, turned and flattened as set.
+**Draw with it:** pick the **Pixel brush** from the **Brush** button's pull-out (**Alt+Shift+N**), choose a colour and drag. Or open the [brush picker](help:brush-picker) under the preview and pick one that comes ready. The options read like the Brush's: see [parts of a brush](help:brush-parts). The cursor is the real shape of the tip, turned and flattened as set.
 
 **The things you reach for:**
 - **Tip:** **Round**, **Square**, or **Picture**. A picture tip is a little drawing of your own: press **Draw a picture...** to draw it on a grid, or start from a picture file or your selection. See [draw your own picture tip](help:pixel-brush-picture).

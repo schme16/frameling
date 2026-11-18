@@ -110,7 +110,8 @@ export const BIG_MENUS: Record<string, number> = {
   // in the Colours panel and the Gradient tool options are the way in (src/ui/paletteFirst.ts).
   // 16 November 2026, tools-room: 149 down to 82. The tool list (every tool is a button on the rail), the Line style submenu and the rows that are in a tool's own options left the menu and stayed in the palette (src/ui/paletteFirst.ts); five tools the Pixel rail leaves off stay, in Tools off the Pixel rail. See ledger-history.ts for the step.
   // 16 November 2026, tips-palette: 82 down to 65. Seventeen of the twenty Brush tips entries left the menu and stayed in the palette (src/ui/paletteFirst.ts): the nine tips are rows in the Tip picker, and the selection, Along the line, Edged parts and pixel reset entries are buttons in the brush options. Next tip, Previous tip and Turn brush lines into plain shapes have no control on screen, so they stay.
-  Draw: 65,
+  // 17 November 2026, soft-tools: 65 up to 113. The Soft paint menu left the bar when the soft tools became stacks on the rail (Brush, Eraser, Retouch), so its 48 commands are back under Tools, in a Soft paint submenu with the chalk and charcoal, pixel brush and clone stamp settings beside it. No new command: the same ones, one menu fewer on the bar. See ledger-history.ts for the step.
+  Draw: 113,
 };
 
 /**

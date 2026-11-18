@@ -57,7 +57,7 @@ describe('menu filtering', () => {
     expect(shape(resolveMenu(file, MENUS, r.lookup, r.all, SUBMENUS))).toEqual(['file.new']);
   });
   it('the real menus have the ids File, Edit, View, Draw, Layers, Animate, Extras, Effects, Streaming and Help (Artboards and Plugins live inside others, and Pixel is gone)', () => {
-    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
+    expect(MENUS.map((m) => m.label)).toEqual(['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects', 'Streaming', 'Help']);
   });
   it('a menu that moved inside another still takes what a feature adds by its old name', () => {
     expect(MENU_HOMES).toEqual({ Rig: 'Extras', 'sub:rig': 'Extras', 'sub:effects': 'Effects', Artboards: 'sub:artboards', 'sub:masks': 'sub:layer', 'sub:pairs': 'Layers', Plugins: 'sub:plugins', Pixel: 'Draw', 'sub:tools': 'Draw' });
@@ -82,7 +82,7 @@ describe('the Help and Skeleton menus', () => {
   });
   it('the menus say what is in them, plain word first', () => {
     const title = (id: string) => menuTitle(MENUS.find((m) => m.label === id)!);
-    expect([title('Draw'), title('Soft'), title('Layers'), title('Animate'), title('Extras'), title('Effects')]).toEqual(['Tools', 'Soft paint', 'Layers and artboards', 'Animation', 'Rigging', 'Effects']);
+    expect([title('Draw'), title('Layers'), title('Animate'), title('Extras'), title('Effects')]).toEqual(['Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects']);
   });
 });
 
@@ -168,13 +168,13 @@ describe('the real menus', async () => {
     expect(tooLong).toEqual([]);
   });
 
-  it('there are eleven menus, and the long ones sort their entries into submenus rather than one long list', () => {
-    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools', 'Soft paint', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Streaming', 'Help']);
+  it('there are ten menus, and the long ones sort their entries into submenus rather than one long list', () => {
+    expect(resolveMenus().map((m) => menuTitle(m.menu))).toEqual(['File', 'Edit', 'View', 'Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Streaming', 'Help']);
     for (const m of resolveMenus()) expect(depth(m.items), m.menu.label).toBeLessThan(41);
     // Nothing lands in a tail at the bottom of a menu: every command is named where it belongs, so a menu comes out the
     // same with its categories taken away.
     const bare = (label: string) => flat(resolveMenu({ ...MENUS.find((x) => x.label === label)!, categories: [] }));
-    for (const label of ['File', 'Edit', 'View', 'Draw', 'Soft', 'Layers', 'Animate', 'Extras', 'Effects']) expect(flat(menu(label)), label).toEqual(bare(label));
+    for (const label of ['File', 'Edit', 'View', 'Draw', 'Layers', 'Animate', 'Extras', 'Effects']) expect(flat(menu(label)), label).toEqual(bare(label));
   });
   it('Streaming is a menu of its own: the audience tools, each part a group, every entry three clicks from the bar', () => {
     const inside = menu('Streaming');
@@ -203,7 +203,7 @@ describe('the real menus', async () => {
     try {
       setStreaming(false, { remember: false });
       const bar = resolveMenus().map((m) => menuTitle(m.menu));
-      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools', 'Soft paint', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Help']);
+      expect(bar).toEqual(['File', 'Edit', 'View', 'Tools', 'Layers and artboards', 'Animation', 'Rigging', 'Effects', 'Help']);
       // Everything of the streaming menu that is not a streaming tool is still in View.
       const inView = flat(menu('View'));
       for (const id of ['view.streamSafe', 'stream.obsLink', 'capture.toggle', 'features.streamingOn']) expect(inView, id).toContain(id);
@@ -277,9 +277,12 @@ describe('the real menus', async () => {
     const tools = flat(menu('Draw'));
     expect(tools.filter((id) => id.startsWith('layers.'))).toEqual([]);
     expect(MENUS.find((m) => m.label === 'Pixel')).toBeUndefined();
-    // What the Pixel menu held is in Tools (the pixel tools, palette, text and brush settings), in Soft paint (spray, soft paint, chalk, charcoal and the pixel brush) or where it belongs.
-    expect(flat(menu('Soft')), 'Soft paint').toEqual(expect.arrayContaining(['tools.spray', 'tools.soft-brush', 'tools.charcoal', 'charcoal.paper.rough', 'tools.pixel-brush', 'pixelbrush.spacing.wider']));
-    expect(tools.filter((id) => /^(tools\.(soft-|airbrush|highlighter|smudge|charcoal|spray|pixel-brush)|charcoal\.|pixelbrush\.)/.test(id))).toEqual([]);
+    // What the Pixel menu held is in Tools (the pixel tools, palette, text and brush settings), in Tools > Soft paint (spray, soft paint, chalk, charcoal and the pixel brush) or where it belongs. The Soft paint menu left the bar when the soft tools became stacks on the rail.
+    expect(flat(menu('Draw')), 'Tools > Soft paint').toEqual(expect.arrayContaining(['tools.spray', 'tools.soft-brush', 'tools.charcoal', 'charcoal.paper.rough', 'tools.pixel-brush', 'pixelbrush.spacing.wider']));
+    // They are in one submenu of Tools, named Soft paint, and nowhere else in it.
+    const soft = menu('Draw').find((i) => i.kind === 'submenu' && i.label === 'Soft paint');
+    expect(soft, 'Tools > Soft paint').toBeTruthy();
+    expect(flat(soft && soft.kind === 'submenu' ? soft.items : [])).toEqual(expect.arrayContaining(['tools.soft-brush', 'tools.airbrush', 'tools.highlighter', 'tools.soft-eraser', 'tools.smudge', 'tools.blur-brush', 'tools.sharpen-brush']));
     // The pencil and Mirror drawing are on the rail and in the tool options now (src/ui/paletteFirst.ts).
     for (const id of ['pixel.sizeUp', 'text.pixelType', 'pixel.outline', 'pixel.flipH', 'pixel.reduceToPalette']) expect(tools, id).toContain(id);
     expect(flat(menu('Animate'))).toContain('pixel.makeItMove');

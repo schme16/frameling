@@ -16,6 +16,7 @@ import { openPrefs } from './overlays';
 import { toast } from './toast';
 import type { WaitingTool } from './toolArrange';
 import { SIDE_WORDS } from './toolRailWidth';
+import { STACK_CLICK_CHOICE, STACK_SHARE_CHOICE, type StackClick, type StackMode } from './toolStacks';
 import { choiceWord } from '../words/choices';
 
 const WORDS: Record<LayerKind, string> = { vector: 'Vector layer', pixel: 'Pixel layer', tilemap: 'Tile layer', camera: 'Camera layer' };
@@ -315,6 +316,37 @@ registerChoice<OffLayerPref>({
   options: [
     { value: 'hide', label: choiceWord('choice.tools.offLayer.hide.label'), did: choiceWord('choice.tools.offLayer.hide.did'), detail: choiceWord('choice.tools.offLayer.hide.detail') },
     { value: 'grey', label: choiceWord('choice.tools.offLayer.grey.label'), did: choiceWord('choice.tools.offLayer.grey.did'), detail: choiceWord('choice.tools.offLayer.grey.detail') },
+  ],
+});
+
+// ---- Similar tools share a button (a stack): the Brush and its soft cousins, the Eraser and the Soft eraser, the Retouch tools.
+// Two settings more than questions, so they are never asked: the usual answer is used and Preferences > Behaviour changes it.
+
+registerChoice<StackClick>({
+  id: STACK_CLICK_CHOICE,
+  title: choiceWord('choice.tools.stackClick.title'),
+  question: choiceWord('choice.tools.stackClick.question'),
+  category: 'Tools',
+  help: 'tool-pullouts',
+  default: 'last',
+  silent: true,
+  options: [
+    { value: 'last', label: choiceWord('choice.tools.stackClick.last.label'), detail: choiceWord('choice.tools.stackClick.last.detail') },
+    { value: 'first', label: choiceWord('choice.tools.stackClick.first.label'), detail: choiceWord('choice.tools.stackClick.first.detail') },
+  ],
+});
+
+registerChoice<StackMode>({
+  id: STACK_SHARE_CHOICE,
+  title: choiceWord('choice.tools.stackShare.title'),
+  question: choiceWord('choice.tools.stackShare.question'),
+  category: 'Tools',
+  help: 'tool-pullouts',
+  default: 'share',
+  silent: true,
+  options: [
+    { value: 'share', label: choiceWord('choice.tools.stackShare.share.label'), detail: choiceWord('choice.tools.stackShare.share.detail') },
+    { value: 'apart', label: choiceWord('choice.tools.stackShare.apart.label'), detail: choiceWord('choice.tools.stackShare.apart.detail') },
   ],
 });
 

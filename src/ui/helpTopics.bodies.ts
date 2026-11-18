@@ -741,33 +741,33 @@ See also [The tool strip](help:tool-strip), [The Pixel workspace](help:pixel-wor
 
 ## Groups
 
-Tools that belong together sit together under a small name: **Select**, **Draw**, **Colour**, **Shapes** (with the Pen), **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
-
-The strip starts wide enough to read every name on one line. A longer name of your own drops to a second line before anything is cut short.
+Tools that belong together sit together under a small name: **Select**, **Draw**, **Retouch**, **Colour**, **Shapes** (with the Pen), **Rig and motion** and **View** (hand, zoom and artboard). A tool that came from a plugin and has no group yet goes in **Other**.
 
 For a slimmer strip, turn off **Tool group names** in **Preferences, General**. The groups stay, as thin gaps.
 
 ## Choose a tool
 
-Press its button or its key. Rest on a button to see the key.
+Press its button or its key.
 
 ## The strip stays put
 
-Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer, and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
+Switch between a vector layer and a pixel layer and nothing moves, so your hand can learn the strip. A tool that doesn't work on the layer you're on is left off the strip, so the strip is shorter and everything else stays exactly where it was: Shade, Dither, Spray and the Magic wand wait out of sight on a vector layer (the soft brushes and the Retouch tools stay in their pull-outs, greyed), and Text, Gradient and the curve tools on a pixel layer. To see every tool all the time, set **Tools that do not work here** to **Grey them out** in **Preferences, General**. They wait where they sit, and resting on one says why.
 
 While they're out of sight, the switch at the top shows which kind of layer you're on. Press the other side to jump to a layer they work on, or right-click it to see them greyed out instead. [Which layer you're drawing on](help:drawing-mode) says more.
 
 A few tools share one place with their pixel twin: the Lasso, Polygon select, Magnetic lasso and Select each have one button that picks the one for the layer you're on, so changing layer never loses your lasso.
 
-Tilemap and camera layers show only the tools that work there.
+## Buttons with more tools behind them
+
+A button with a small corner mark holds more than one tool: the **Brush** has the soft brushes behind it, the **Eraser** the Soft eraser, **Retouch** the Smudge and Blur. Click it for the tool it shows; press and hold for the rest. See [Buttons with more tools behind them](help:tool-pullouts).
 
 ## Your way
 
-Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider or narrower, and double-click the edge to fit your longest name. Drag the grip at its top to put it on another side, or [float it over the canvas](help:tool-move). Right-click the strip to put the tools back the way they came.
+Drag tools into the order you like, or into other groups. See [Arrange your tools](help:tool-arrange). To rename groups, put tools away or fold a group into one button, open [Change the tools](help:tool-builder). Drag the strip's inner edge to make it wider or narrower. Drag the grip at its top to put it on another side, or [float it over the canvas](help:tool-move). Right-click the strip to put the tools back the way they came.
 
 ## One button per group
 
-For a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there. Names come back when you pull its edge wider. A width you pulled it to is asked about once, when you change style: keep it, or start at the style's usual width.
+For a thinner strip, open **Preferences, General** and set **Tool rail style** to **Stacked**. Each group becomes one button, with a small corner mark. Press and hold it, or right-click it, to see the rest of the group and pick from there. Names come back when you pull its edge wider.
 
 Tool keys can be changed in [keyboard shortcuts](help:keyboard-shortcuts).`,
   'tool-move': `Pick the tool strip up by the little grip at its top and carry it. Where it would land lights up as you go, and letting go puts it there. There's no menu to hunt through.
@@ -835,6 +835,29 @@ See also [Change the tools](help:tool-builder), [Panels](help:panels) and [Float
 **Lock it:** right-click the strip and choose **Lock the tools** and none of this can change by accident. See [Lock the tools and panels](help:lock-layout).
 
 Good to know: each [workspace](help:workspaces) keeps its own groups, names, hidden and folded tools and strip width, and they go with the workspace when you save or share it. See also [Arrange your tools](help:tool-arrange) and [The tool strip](help:tool-strip).`,
+  'tool-pullouts': `Some buttons on the [tool strip](help:tool-strip) hold more than one tool. They have a small mark in the corner. The button shows the tool you used last from it, so the soft brush you like is one click away.
+
+**Click it** to pick the tool it shows.
+
+**Press and hold it** (or right-click it, or hold a pen down on it) to open the **pull-out**: every tool in the button, with its name and its key. Pick one, and the button shows it from then on.
+
+**Use a key:** press a tool's key and the button changes to that tool, so the strip always shows what you're drawing with. The keys are on the pull-out. From the keyboard, move to the button and press the menu key to open it.
+
+## What is in them
+
+- **Brush:** Brush, Soft brush, Airbrush, Highlighter, Chalk and charcoal, Pixel brush.
+- **Eraser:** Eraser, Soft eraser.
+- **Retouch:** Smudge, Blur brush, Sharpen brush, Clone stamp.
+
+## On a vector layer
+
+The soft brushes, the Soft eraser and the Retouch tools work on **pixel layers**. On a vector layer they stay in the pull-out, greyed, with "Needs a pixel layer" under each. Pick one anyway and your next stroke goes on a pixel layer beside the one you're on, so nothing is lost.
+
+## Your way
+
+In **Preferences, Behaviour**, under **Tools**, you can choose **Clicking a button with more tools behind it**: the one you used last (the usual), or always the first, so the Brush button is always the Brush. **Similar tools share a button** can be turned off to give every tool a button of its own. A strip you arranged yourself is left as you made it.
+
+**Good to know:** in [Change the tools](help:tool-builder) every tool shows on its own, so you can move them. See also [Soft paint](help:soft-paint).`,
   'tool-arrange': `Your tools, your order. Everything on the [tool strip](help:tool-strip) can be moved.
 
 ## With the mouse

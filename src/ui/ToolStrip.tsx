@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { allTools, getTool } from '../core/registry';
+import { allTools, getCommand, getTool } from '../core/registry';
+import { useChoice } from '../core/choices';
 import { findLayer } from '../core/doc';
 import type { LayerKind } from '../core/format';
 import { store, useStore } from '../core/store';
@@ -19,6 +20,10 @@ import type { DockZone } from './dockModel';
 import { useFeaturesVersion } from '../features/use';
 import { usePrefs } from './prefs';
 import { usePopover } from './popover';
+import { placeBeside, placePopup } from './placePopup';
+import { Keys } from './ShortcutChip';
+import { effectiveKeys } from './keys';
+import { frontOfUnit, STACK_CLICK_CHOICE, STACK_SHARE_CHOICE, greyedInStacks, railUnits, stackName, type RailUnit, type StackClick, type StackMode, type ToolStack } from './toolStacks';
 import { awayPlaces, groupName, headingOf, hiddenTools, railFor, resolveGroups, slotMates, twinFor, visibleGroups, waitingFor, waitingWords, whyOff, type RailTool, type ToolGroup } from './toolArrange';
 import { iconSizeFor, ToolbarBuilder } from './ToolbarBuilder';
 import { acrossFor, buttonsRailWidth, clampRailWidth, minRailWidth, naturalRailWidth, switchRoom, railSizes, railWidthNow, RAIL_BIG_STEP, RAIL_MAX, RAIL_STEP } from './toolRailWidth';
@@ -139,8 +144,17 @@ function neighbour(buttons: HTMLElement[], from: HTMLElement, key: string): HTML
   return buttons[(i + (down || right ? 1 : -1) + buttons.length) % buttons.length];
 }
 
-/** The stacked style's flyout: the rest of a group, beside its button. */
-function Flyout({ group, groups, anchor, place, visible, off, why, current, onPick, onClose }: { group: ToolGroup; groups: ToolGroup[]; anchor: DOMRect; place: DockZone | 'float'; visible: (id: string) => boolean; off: Set<string>; why: (id: string) => string; current: string; onPick: (id: string) => void; onClose: () => void }) {
+/** What a pull-out is made of: a folded group, or a stack of tools sharing one button. */
+interface PullOut {
+  /** The words at the top: the group's name, or the stack's. */
+  title: string;
+  tools: string[];
+  /** A folded group's id, which makes the Rename group row show. A stack has none. */
+  group?: string;
+}
+
+/** The pull-out from a button on the rail: each tool with its name and key, the ones this layer cannot use greyed with the reason. */
+function Flyout({ pull, anchor, place, visible, off, why, current, onPick, onClose }: { pull: PullOut; anchor: DOMRect; place: DockZone | 'float'; visible: (id: string) => boolean; off: Set<string>; why: (id: string) => string; current: string; onPick: (id: string) => void; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   usePopover(ref, onClose);
   useEffect(() => {
@@ -150,14 +164,28 @@ function Flyout({ group, groups, anchor, place, visible, off, why, current, onPi
     window.addEventListener('pointerdown', away, true);
     return () => window.removeEventListener('pointerdown', away, true);
   }, [onClose]);
-  const side = place === 'top' ? 'below' : place === 'bottom' ? 'above' : place === 'right' || (place === 'float' && anchor.left > window.innerWidth / 2) ? 'left' : 'right';
-  const style: React.CSSProperties =
-    side === 'below' ? { top: anchor.bottom + 6, left: Math.max(8, anchor.left) } : side === 'above' ? { bottom: window.innerHeight - anchor.top + 6, left: Math.max(8, anchor.left) } : side === 'left' ? { top: Math.max(8, anchor.top), right: window.innerWidth - anchor.left + 6 } : { top: Math.max(8, anchor.top), left: anchor.right + 6 };
-  const tools = group.tools.filter(visible);
+  const tools = pull.tools.filter(visible);
+  // The size it would be: a header, a row for each tool (and one for Rename group), then the room it needs is worked out so it stays on screen.
+  const want = 36 + tools.length * 36 + (pull.group ? 38 : 0);
+  const [win, setWin] = useState({ w: window.innerWidth, h: window.innerHeight });
+  useEffect(() => {
+    const on = () => setWin({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  const box = { left: anchor.left, top: anchor.top, right: anchor.right, bottom: anchor.bottom };
+  const style: React.CSSProperties = (() => {
+    if (place === 'top' || place === 'bottom') {
+      const p = placePopup({ anchor: box, win, width: 230, height: want });
+      return { left: p.left, ...(p.top !== undefined ? { top: p.top } : {}), ...(p.bottom !== undefined ? { bottom: p.bottom } : {}), maxHeight: p.maxHeight };
+    }
+    const p = placeBeside({ anchor: box, win, width: 230, height: want, prefer: place === 'right' || (place === 'float' && anchor.left > win.w / 2) ? 'left' : 'right' });
+    return { left: p.left, top: p.top, maxHeight: p.maxHeight };
+  })();
   // The name box hangs where the flyout is; the flyout closes so it has the screen to itself.
   const rename = () => {
     onClose();
-    askGroupRename(group.id, { x: anchor.right + 6, y: anchor.top });
+    if (pull.group) askGroupRename(pull.group, { x: anchor.right + 6, y: anchor.top });
   };
   const onKey = (e: React.KeyboardEvent<HTMLElement>) => {
     const items = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
@@ -173,24 +201,28 @@ function Flyout({ group, groups, anchor, place, visible, off, why, current, onPi
     items[(at + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
   };
   return createPortal(
-    <div ref={ref} className="ui-tool-fly" role="menu" aria-label={`${groupName(group, groups)} tools`} style={style} data-tool-axis="y" onKeyDown={onKey}>
-      <div className="ui-tool-fly-head" role="presentation" onDoubleClick={rename}>
-        {groupName(group, groups)}
+    <div ref={ref} className="ui-tool-fly" role="menu" aria-label={`${pull.title} tools`} style={style} data-tool-axis="y" onKeyDown={onKey}>
+      <div className="ui-tool-fly-head" role="presentation" onDoubleClick={pull.group ? rename : undefined}>
+        {pull.title}
       </div>
       {tools.map((id) => {
         const t = getTool(id);
         if (!t) return null;
+        const cmd = getCommand(`tools.${id}`);
+        const keys = cmd ? effectiveKeys(cmd) : [];
+        const isOff = off.has(id);
         return (
           <button
             key={id}
             type="button"
             role="menuitemradio"
             aria-checked={current === id}
-            className={`ui-tool-fly-item${current === id ? ' is-chosen' : ''}${off.has(id) ? ' is-off' : ''}`}
-            aria-disabled={off.has(id) || undefined}
+            className={`ui-tool-fly-item${current === id ? ' is-chosen' : ''}${isOff ? ' is-off' : ''}`}
+            aria-disabled={isOff || undefined}
+            aria-description={isOff ? why(id) : undefined}
             data-tool-id={id}
             data-command={`tools.${id}`}
-            {...(off.has(id) ? { 'data-tip': t.label, 'data-tip-desc': why(id) } : {})}
+            {...(isOff ? { 'data-tip': t.label, 'data-tip-desc': why(id) } : {})}
             onClick={() => onPick(id)}
             onPointerDown={(e) => startToolDrag(e, id, () => visibleGroups(currentGroups(), visible), visible, onClose)}
             onContextMenu={(e) => {
@@ -200,18 +232,27 @@ function Flyout({ group, groups, anchor, place, visible, off, why, current, onPi
             }}
           >
             <Icon name={t.icon} size={18} />
-            <span>{t.label}</span>
+            <span className="ui-tool-fly-name">
+              {t.label}
+              {isOff && <small>{needWords(t.layers)}</small>}
+            </span>
+            {keys[0] && <Keys shortcut={keys[0]} className="ui-tool-fly-keys" />}
           </button>
         );
       })}
-      <button type="button" role="menuitem" className="ui-tool-fly-item ui-tool-fly-rename" data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
-        <Icon name="pencil" size={16} />
-        <span>Rename group...</span>
-      </button>
+      {pull.group && (
+        <button type="button" role="menuitem" className="ui-tool-fly-item ui-tool-fly-rename" data-tip="Rename this group" data-tip-desc="Give the group a name of your own." data-help="tool-strip" onClick={rename}>
+          <Icon name="pencil" size={16} />
+          <span>Rename group...</span>
+        </button>
+      )}
     </div>,
     document.body,
   );
 }
+
+/** "Needs a pixel layer": the short reason under a greyed tool in a pull-out. */
+const needWords = (layers: readonly LayerKind[]): string => `Needs a ${layers.includes('pixel') && !layers.includes('vector') ? 'pixel' : 'vector'} layer`;
 
 export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   // A feature turned on or off adds or takes away tools.
@@ -253,7 +294,31 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const everything = (still ? allTools().filter((t) => !animationOnlyTools().has(t.id)) : allTools()) as RailTool[];
   const only = kind && wsId ? currentWorkspace()?.tools?.[kind] : undefined;
   const greyOut = usePrefs((p) => p.toolsOffLayer === 'grey');
-  const rail = railFor(everything, kind, only, greyOut);
+  const base = railFor(everything, kind, only, greyOut);
+  const saved = dock.use((d) => railOf(d));
+  // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
+  const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}|${t.slot ?? ''}|${t.stack ?? ''}`).join(',');
+  // The whole arrangement, put-away tools too (they stay in their groups, to come back to).
+  const whole = useMemo(
+    () =>
+      resolveGroups(
+        saved,
+        allKey.split(',').filter(Boolean).map((k) => {
+          const [id, group, at, slot, stack] = k.split('|');
+          return { id, group: group || undefined, groupAt: at === '' ? undefined : Number(at), slot: slot || undefined, stack: stack || undefined };
+        }),
+      ),
+    [saved, allKey],
+  );
+  // Tools that share a button, and what a click on one picks (two settings, in Preferences > Behaviour).
+  const share = useChoice<StackMode>(STACK_SHARE_CHOICE) !== 'apart';
+  const clickMode = useChoice<StackClick>(STACK_CLICK_CHOICE);
+  // With the tools that do not work here hidden, the ones in a stack stay, greyed in their pull-out, so a stack never loses a tool
+  // without saying why (hiding removes nothing).
+  const inStacks = share ? whole.flatMap((g) => g.stacks ?? []) : [];
+  const pool = new Set(everything.filter((t) => (!only || only.includes(t.id)) && t.layers.some((k) => k === 'vector' || k === 'pixel')).map((t) => t.id));
+  const kept = greyOut || !inStacks.length ? [] : greyedInStacks(inStacks, new Set(base.shown), pool);
+  const rail = kept.length ? { shown: [...base.shown, ...kept], off: [...base.off, ...kept] } : base;
   const tools = rail.shown.map((id) => getTool(id)!).filter(Boolean);
   const ids = rail.shown.join(',');
   const offKey = rail.off.join(',');
@@ -261,29 +326,15 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const why = (id: string): string => whyOff({ label: getTool(id)?.label, layers: getTool(id)?.layers ?? [] }, kind);
   // A greyed-out tool is not refused: picking it flips the switch to the layer it needs.
   const choose = (id: string) => pickTool(id);
-  const saved = dock.use((d) => railOf(d));
-  // Each tool with where it asked to start in the rail, as text so the memo below only reruns when that changes.
-  const allKey = allTools().map((t) => `${t.id}|${t.group ?? ''}|${t.groupAt ?? ''}|${t.slot ?? ''}`).join(',');
   const shown = useMemo(() => new Set(ids ? ids.split(',') : []), [ids]);
-  // The whole arrangement, put-away tools too (they stay in their groups, to come back to).
-  const whole = useMemo(
-    () =>
-      resolveGroups(
-        saved,
-        allKey.split(',').filter(Boolean).map((k) => {
-          const [id, group, at, slot] = k.split('|');
-          return { id, group: group || undefined, groupAt: at === '' ? undefined : Number(at), slot: slot || undefined };
-        }),
-      ),
-    [saved, allKey],
-  );
   const awayIds = useMemo(() => new Set(hiddenTools(whole)), [whole]);
   // What the shelf shows: one for each place, and only the ones that exist on the rail for this layer.
   const awayList = useMemo(() => awayPlaces(whole, slotMates(allTools())).filter((id) => getTool(id)), [whole, allKey]);
   const visible = (id: string) => shown.has(id) && !awayIds.has(id);
   // With the other tools hidden on this layer, say what is missing and why, so a shorter rail isn't a mystery.
   // Greyed out or hidden, the tools that need another kind of layer are counted: the layer line at the top says how many.
-  const waiting = only ? [] : waitingFor(everything, kind, awayIds);
+  const keptSet = new Set(kept);
+  const waiting = only ? [] : waitingFor(everything, kind, new Set([...awayIds, ...kept])).filter((w) => !keptSet.has(w.id));
   const layerName = useStore((s) => (findLayer(s.doc, s.ui.activeLayerId) ?? s.doc.layers[s.doc.layers.length - 1])?.name ?? '');
   const line = kind ? modeLine(kind, layerName, waiting, greyOut) : null;
   // The top layer of each kind, for what each side of the switch says it would go to.
@@ -316,7 +367,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   const note = railNote.use((n) => n);
   const front = frontTools.use((f) => f);
   const navRef = useRef<HTMLElement>(null);
-  const [fly, setFly] = useState<{ group: string; rect: DOMRect } | null>(null);
+  // The pull-out that is open: the folded group's id or the stack's id, and the button it came out of.
+  const [fly, setFly] = useState<{ unit: string; rect: DOMRect } | null>(null);
   // Where the rail is on screen, for the panel that sits beside it while it is being changed.
   const [railRect, setRailRect] = useState<DOMRect | null>(null);
   useEffect(() => {
@@ -351,13 +403,19 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, ids, kind]);
 
-  // Whatever tool is used from a group is the one its stacked button shows.
+  // Whatever tool is used from a group or a stack is the one its button shows. A key press that picks a tool lands here too.
   useEffect(() => {
-    const g = groups.find((x) => x.tools.includes(current));
-    if (g && frontTools.get()[g.id] !== current) frontTools.set((f) => ({ ...f, [g.id]: current }));
+    const now = frontTools.get();
+    const next: Record<string, string> = {};
+    for (const g of groups) {
+      if (!g.tools.includes(current)) continue;
+      next[g.id] = current;
+      for (const x of g.stacks ?? []) if (x.tools.includes(current)) next[x.id] = current;
+    }
+    if (Object.entries(next).some(([k, v]) => now[k] !== v)) frontTools.set((f) => ({ ...f, ...next }));
   }, [current, groups]);
   useEffect(() => {
-    if (!stacked) setFly((f) => (f && groups.find((g) => g.id === f.group)?.fold ? f : null));
+    if (!stacked) setFly((f) => (f && (groups.some((g) => g.id === f.unit && g.fold) || groups.some((g) => g.stacks?.some((x) => x.id === f.unit))) ? f : null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stacked]);
   // Something outside (a quest) asked for a group's flyout.
@@ -365,18 +423,14 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
   useEffect(() => {
     if (!asked) return;
     flyRequest.set(null);
-    const btn = navRef.current?.querySelector<HTMLElement>(`.ui-tool.is-stack[data-tool-group="${asked}"]`);
-    if (btn) setFly({ group: asked, rect: btn.getBoundingClientRect() });
+    const btn = navRef.current?.querySelector<HTMLElement>(`.ui-tool.is-stack[data-stack="${asked}"]`);
+    if (btn) setFly({ unit: asked, rect: btn.getBoundingClientRect() });
   }, [asked, stacked]);
 
   // One button for the group: every group when the rail is in the one-per-group style, else the ones folded one by one.
   const foldedGroup = (g: ToolGroup): boolean => stacked || !!g.fold;
-  const frontOf = (g: ToolGroup): string => {
-    if (g.tools.includes(current)) return current;
-    const f = front[g.id];
-    if (f && g.tools.includes(f) && !off.has(f)) return f;
-    return g.tools.find((t) => !off.has(t)) ?? g.tools[0];
-  };
+  // The tool a one-button place stands for (a folded group, or a stack): see frontOfUnit.
+  const frontOf = (unit: { id: string; tools: string[] }, click?: StackClick): string => frontOfUnit(unit, { current, remembered: front[unit.id], off, click });
 
   const refocus = (id: string) =>
     requestAnimationFrame(() => navRef.current?.querySelector<HTMLElement>(`[data-tool-id="${id}"]`)?.focus());
@@ -386,8 +440,8 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
       e.preventDefault();
       const at = menuPoint(active ?? e.currentTarget);
-      const gid = active?.dataset.toolGroup;
-      if (gid && active?.classList.contains('is-stack')) return setFly({ group: gid, rect: active.getBoundingClientRect() });
+      const sid = active?.dataset.stack;
+      if (sid && active?.classList.contains('is-stack')) return setFly({ unit: sid, rect: active.getBoundingClientRect() });
       const id = active?.dataset.toolId;
       return openDockMenu(at.x, at.y, id ? [...toolMenu(id, visible), { separator: true }, ...toolsMenu()] : toolsMenu());
     }
@@ -415,12 +469,70 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
     return (m.kind === 'before' || m.kind === 'after') && m.tool === id ? ` is-drop-${m.kind}` : '';
   };
 
-  const onPickGroup = (g: ToolGroup) => {
+  const onPickUnit = (unit: { id: string; tools: string[] }, click?: StackClick) => {
     if (held.current.fired) {
       held.current.fired = false;
       return;
     }
-    choose(frontOf(g));
+    choose(frontOf(unit, click));
+  };
+
+  // One button for several tools: a folded group, or a stack of similar tools. A click picks the front tool; press and hold,
+  // right click, a pen held down or the menu key opens the pull-out with the others.
+  const unitButton = (unit: RailUnit, g: ToolGroup, label: (front: string) => string, tip: string, click?: StackClick) => {
+    const id = frontOf(unit, click);
+    const t = byId.get(id);
+    if (!t) return null;
+    const more = unit.tools.length > 1;
+    const open = fly?.unit === unit.id;
+    return (
+      <button
+        key={unit.id}
+        type="button"
+        className={`ui-tool is-stack${more ? ' has-more' : ''}${off.has(id) ? ' is-off' : ''}${unit.tools.includes(current) ? ' is-chosen' : ''}${drag?.mark?.kind === 'group' && drag.mark.group === g.id ? ' is-drop-group' : ''}`}
+        aria-label={more ? label(t.label) : t.label}
+        aria-pressed={unit.tools.includes(current)}
+        aria-haspopup={more ? 'menu' : undefined}
+        aria-expanded={more ? open : undefined}
+        aria-disabled={off.has(id) || undefined}
+        data-tip={tip.replace('{tool}', t.label)}
+        {...(more ? { 'data-tip-desc': off.has(id) ? why(id) : 'Press and hold to pick another tool from this button.' } : off.has(id) ? { 'data-tip-desc': why(id) } : {})}
+        data-command={`tools.${id}`}
+        data-help={more && unit.stack ? 'tool-pullouts' : t.help}
+        data-tool-group={g.id}
+        data-stack={unit.id}
+        data-tool-id={unit.stack ? id : undefined}
+        onPointerDown={(e) => {
+          if (e.button !== 0 || !more) return;
+          const el = e.currentTarget;
+          held.current.fired = false;
+          window.clearTimeout(held.current.timer);
+          held.current.timer = window.setTimeout(() => {
+            held.current.fired = true;
+            setFly({ unit: unit.id, rect: el.getBoundingClientRect() });
+          }, 420);
+        }}
+        onPointerUp={() => window.clearTimeout(held.current.timer)}
+        onPointerLeave={() => window.clearTimeout(held.current.timer)}
+        onPointerCancel={() => window.clearTimeout(held.current.timer)}
+        onClick={(e) => {
+          // While the tools are being changed a press opens what can be done to the group.
+          if (editing && !held.current.fired) {
+            const at = menuPoint(e.currentTarget);
+            return openDockMenu(at.x, at.y, groupMenu(g.id, at, visible));
+          }
+          onPickUnit(unit, click);
+        }}
+        onContextMenu={(e) => {
+          if (!more) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setFly({ unit: unit.id, rect: e.currentTarget.getBoundingClientRect() });
+        }}
+      >
+        <Icon name={t.icon} size={iconPx} />
+      </button>
+    );
   };
 
   // Locked: the handle simply goes. Nothing takes its place, so a locked rail is just the tools.
@@ -451,7 +563,17 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
 
   // How many of a group's tools (counting the ones the layer took off) are waiting for another kind of layer.
   const groupOff = (g: ToolGroup): number => greyOut ? 0 : offInGroup(whole.find((w) => w.id === g.id)?.tools ?? g.tools, waitingIds);
-  const flyGroup = fly ? groups.find((g) => g.id === fly.group) : undefined;
+  // What the open pull-out holds: a folded group's tools, or a stack's.
+  const pullOut: PullOut | undefined = (() => {
+    if (!fly) return undefined;
+    const g = groups.find((x) => x.id === fly.unit);
+    if (g && (stacked || g.fold)) return { title: groupName(g, groups), tools: g.tools, group: g.id };
+    for (const x of groups) {
+      const st = x.stacks?.find((y) => y.id === fly.unit);
+      if (st) return { title: stackName(st.id), tools: st.tools };
+    }
+    return undefined;
+  })();
   const ghost = drag ? getTool(drag.id) : undefined;
 
   return (
@@ -472,7 +594,7 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
       }}
     >
       <span id="tool-rail-hint" className="ui-sr-only">
-        {stacked || groups.some((g) => g.fold) ? 'Press and hold a one-button group, or open its menu, to pick another tool from it. Hold Alt and press an arrow key on any other tool to move it.' : 'Hold Alt and press an arrow key to move the focused tool.'}
+        {stacked || groups.some((g) => g.fold || g.stacks?.length) ? 'Press and hold a button with a small corner mark, or open its menu, to pick another tool from it. Hold Alt and press an arrow key on any other tool to move it.' : 'Hold Alt and press an arrow key to move the focused tool.'}
       </span>
       <span className="ui-sr-only" role="status" aria-live="polite">
         {note}
@@ -562,59 +684,12 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
                 </div>
               ) : null}
               {folded ? (
-                (() => {
-                  const id = frontOf(g);
-                  const t = byId.get(id);
-                  if (!t) return null;
-                  const more = g.tools.length > 1;
-                  return (
-                    <button
-                      type="button"
-                      className={`ui-tool is-stack${more ? ' has-more' : ''}${off.has(id) ? ' is-off' : ''}${g.tools.includes(current) ? ' is-chosen' : ''}${drag?.mark?.kind === 'group' && drag.mark.group === g.id ? ' is-drop-group' : ''}`}
-                      aria-label={more ? `${t.label}. ${groupName(g, groups)} group, ${g.tools.length} tools.` : t.label}
-                      aria-pressed={g.tools.includes(current)}
-                      aria-haspopup={more ? 'menu' : undefined}
-                      aria-disabled={off.has(id) || undefined}
-                      data-tip={`${t.label}, in ${groupName(g, groups)}`}
-                      {...(off.has(id) ? { 'data-tip-desc': why(id) } : {})}
-                      data-command={`tools.${id}`}
-                      data-help={t.help}
-                      data-tool-group={g.id}
-                      onPointerDown={(e) => {
-                        if (e.button !== 0 || !more) return;
-                        const el = e.currentTarget;
-                        held.current.fired = false;
-                        window.clearTimeout(held.current.timer);
-                        held.current.timer = window.setTimeout(() => {
-                          held.current.fired = true;
-                          setFly({ group: g.id, rect: el.getBoundingClientRect() });
-                        }, 420);
-                      }}
-                      onPointerUp={() => window.clearTimeout(held.current.timer)}
-                      onPointerLeave={() => window.clearTimeout(held.current.timer)}
-                      onPointerCancel={() => window.clearTimeout(held.current.timer)}
-                      onClick={(e) => {
-                        // While the tools are being changed a press opens what can be done to the group.
-                        if (editing && !held.current.fired) {
-                          const at = menuPoint(e.currentTarget);
-                          return openDockMenu(at.x, at.y, groupMenu(g.id, at, visible));
-                        }
-                        onPickGroup(g);
-                      }}
-                      onContextMenu={(e) => {
-                        if (!more) return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setFly({ group: g.id, rect: e.currentTarget.getBoundingClientRect() });
-                      }}
-                    >
-                      <Icon name={t.icon} size={iconPx} />
-                    </button>
-                  );
-                })()
+                unitButton({ id: g.id, tools: g.tools, stack: false }, g, (t) => `${t}. ${groupName(g, groups)} group, ${g.tools.length} tools.`, `{tool}, in ${groupName(g, groups)}`)
               ) : (
                 <div className={`ui-tool-group${drag?.mark?.kind === 'group' && drag.mark.group === g.id ? ' is-drop' : ''}`} role="group" aria-label={groupName(g, groups)} data-tool-group={g.id} data-tool-axis={axis}>
-                  {g.tools.map((id) => {
+                  {railUnits(g.tools, g.stacks, share && !editing).map((u) => {
+                    if (u.stack) return unitButton(u, g, (t) => `${t}. ${stackName(u.id)}, ${u.tools.length} tools in this button.`, `{tool}, with ${u.tools.length - 1} more`, clickMode);
+                    const id = u.id;
                     const t = byId.get(id);
                     if (!t) return null;
                     return (
@@ -663,10 +738,9 @@ export function ToolStrip({ place = 'left' }: { place?: DockZone | 'float' }) {
         </button>
       )}
       {!tools.length && <span className="ui-tools-empty" aria-hidden="true"><Icon name="brush" size={20} /></span>}
-      {fly && flyGroup && (
+      {fly && pullOut && (
         <Flyout
-          group={flyGroup}
-          groups={groups}
+          pull={pullOut}
           anchor={fly.rect}
           place={place}
           visible={visible}
