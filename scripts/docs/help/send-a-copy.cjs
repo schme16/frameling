@@ -21,7 +21,7 @@ module.exports = [
       L.wait(600),
       { clickOn: '.ui-menubar [role=menuitem]', text: 'File', after: 700 },
       { clickOn: '[role=menu] [role^=menuitem]', text: 'Send a copy...', hover: true, after: 1000 },
-      { clickOn: '[role=menu] [role^=menuitem]', text: 'Send a copy...', after: 1800 },
+      { clickOn: '[role=menu] [role^=menuitem]', text: 'Send a copy...', after: 3200 },
       { clickOn: '.ui-choice-opt', text: 'Just the drawing', hover: true, after: 1400 },
       { clickOn: '.ui-choice-opt', text: 'Send my undo history too', hover: true, after: 1400 },
       { clickOn: '.ui-choice-opt', text: 'Just the drawing', after: 900 },

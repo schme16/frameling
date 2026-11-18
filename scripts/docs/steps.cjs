@@ -154,8 +154,25 @@ async function resolveStage(wc, step) {
 async function runSteps(win, steps, { outDir, width, height, name }) {
   const wc = win.webContents;
   const send = (e) => wc.sendInputEvent(e);
+  let at = -1;
   for (const step of steps) {
-    const s = await resolveStage(wc, step);
+    at++;
+    try {
+      await runOne(step);
+    } catch (err) {
+      // Say which step it was, so an entry that stops half way is quick to find.
+      err.message = `${err.message.split('\n')[0]} [step ${at}: ${JSON.stringify(step).slice(0, 140)}]`;
+      throw err;
+    }
+  }
+  async function runOne(step) {
+    let s = await resolveStage(wc, step);
+    // {"rclickOn": "<selector>"}: a right click on the middle of the first element that matches, so it follows the tool rail about.
+    if (s.rclickOn) {
+      const r = await wc.executeJavaScript(`(() => { const b = document.querySelector(${JSON.stringify(s.rclickOn)})?.getBoundingClientRect(); return b && [Math.round(b.x + b.width / 2), Math.round(b.y + b.height / 2)]; })()`);
+      if (!r) throw new Error(`rclickOn: nothing for ${s.rclickOn}`);
+      s = { ...s, rclick: r };
+    }
     if (s.eval) await wc.executeJavaScript(s.eval);
     else if (s.log) console.log(JSON.stringify(await wc.executeJavaScript(s.log)));
     // {"write": "js returning base64", "file": "name.png"}: saves what the page hands back (an exported picture) into the output folder.
@@ -170,7 +187,7 @@ async function runSteps(win, steps, { outDir, width, height, name }) {
       await sleep(s.pause ?? 0);
       if (s.hover) {
         await sleep(s.after ?? 80);
-        continue;
+        return;
       }
       send({ type: 'mouseDown', x: r[0], y: r[1], button: 'left', clickCount: 1 });
       await sleep(30);

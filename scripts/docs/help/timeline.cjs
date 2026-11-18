@@ -12,9 +12,9 @@ const only = (id) => [js(`${F}.showPanel(${JSON.stringify(id)})`), { wait: 600 }
 /** Types text one key at a time into whatever has focus (a newline is Enter). */
 const typing = (str) => [...str].map((c) => (c === '\n' ? { eval: `document.execCommand('insertText', false, '\\n')` } : { key: c, after: 70 }));
 // Frame f (1 based) of the timeline: the centre x of its cell, at the default zoom in the Animate workspace.
-const fx = (f) => 361 + 22 * (f - 1);
+const fx = (f) => 391 + 22 * (f - 1);
 // The right edge (where you grab a hold to stretch it) of a drawing that ends at frame f, when the timeline is zoomed to 14 px a frame.
-const edge = (f) => 350 + 14 * f - 4;
+const edge = (f) => 380 + 14 * f - 4;
 const RULER_Y = 523;
 const BALL_Y = 595;
 const LINES_Y = 595;
@@ -23,7 +23,7 @@ const ELLIPSE = js(`${F}.run('tools.ellipse')`);
 const PARK = [640, 785];
 // A pink fill and a dark outline, so what is drawn reads clearly in both themes.
 const PAINT = { eval: `${F}.store().setUi({ color: '#1d1b26', fillColor: '#ff6f91' })` };
-const CROP = [108, 40, 812, 640];
+const CROP = [143, 40, 734, 640];
 
 // A pink title typed on the canvas with the Text tool, 110 px, ready to be styled or animated.
 const textSetup = (len) => [
@@ -33,7 +33,9 @@ const textSetup = (len) => [
   ...typing('Once upon\na time...'),
   { wait: 400 },
   { key: 'Escape', after: 800 },
-  { click: [990, 511], after: 300 },
+  // The Size box is found by name, so it doesn't matter where the sections sit.
+  js(`document.querySelector('#rd-sec-text')?.scrollIntoView({ block: 'start' })`), { wait: 400 },
+  { clickOn: '#rd-sec-text input[aria-label="Size"]', after: 300 },
   { type: '110' }, js(`document.activeElement.blur()`), { wait: 600 },
   // The title stays up for the whole animation (its drawing is held to the last frame).
   js(`${F}.store().update('Hold the title', (d) => { const l = d.layers.find((x) => x.name === 'Lines'); if (l && l.cels[0]) l.cels[0].length = d.length; })`), { wait: 400 },
@@ -56,11 +58,11 @@ module.exports = [
     steps: [
       ...open('bouncing-logo'),
       { move: [700, 700] },
-      { rec: '@', crop: [108, 430, 812, 336], every: 80 },
+      { rec: '@', crop: [143, 430, 734, 336], every: 80 },
       { wait: 700 },
-      { click: [128, 592], after: 1000 },
-      { click: [801, 642], after: 900 },
-      { drag: [[801, 642], [867, 642]], steps: 30, delay: 35, after: 600 },
+      { click: [163, 592], after: 1000 },
+      { click: [831, 642], after: 900 },
+      { drag: [[831, 642], [897, 642]], steps: 30, delay: 35, after: 600 },
       { move: [600, 760], after: 1200 },
       { rec: 'stop' },
     ],
@@ -91,7 +93,7 @@ module.exports = [
       js(`(() => { const el = document.querySelector('[data-step=zoom]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '14'); el.dispatchEvent(new Event('input', { bubbles: true })); })()`),
       { wait: 600 },
       { move: [700, 720] },
-      { rec: '@', crop: [108, 40, 1100, 640], every: 80 },
+      { rec: '@', crop: [143, 40, 1064, 640], every: 80 },
       { wait: 900 },
       // Out to the end of frame 31, then back to the end of frame 28.
       { drag: [[edge(16), BALL_Y], [edge(31), BALL_Y]], steps: 40, delay: 30, after: 1500 },
@@ -166,7 +168,7 @@ module.exports = [
       js(`(() => { ${F}.store().update('setup', (d) => { const g = d.layers.find((l) => l.name === 'Ground'); const copy = JSON.parse(JSON.stringify(g)); copy.id = 'far-ground'; copy.name = 'Far ground'; copy.cels = g.cels.map((c, i) => ({ ...c, id: 'fg' + i })); d.layers.splice(d.layers.indexOf(g) + 1, 0, copy); d.layers = d.layers.filter((l) => l.name !== 'Shadow'); }); return 1; })()`),
       { wait: 700 },
       { move: PARK }, { move: [645, 785], after: 1500 },
-      { shot: '@', crop: [108, 430, 806, 232] },
+      { shot: '@', crop: [143, 430, 734, 232] },
     ],
   },
   {
@@ -180,7 +182,7 @@ module.exports = [
       js(`${F}.run('timeline.zoomFit')`),
       { wait: 800 },
       { move: PARK }, { move: [645, 785], after: 1500 },
-      { shot: '@', crop: [108, 430, 806, 232] },
+      { shot: '@', crop: [143, 430, 734, 232] },
     ],
   },
   {
@@ -193,7 +195,7 @@ module.exports = [
       { key: ']', mods: ['alt'], after: 500 },
       { click: [fx(8), BALL_Y], after: 400 },
       { move: PARK }, { move: [645, 785], after: 1500 },
-      { shot: '@', crop: [108, 430, 806, 240] },
+      { shot: '@', crop: [143, 430, 734, 240] },
     ],
   },
   {
@@ -204,7 +206,7 @@ module.exports = [
       { drag: [[440, 180], [510, 250]], steps: 10, delay: 20, after: 500 },
       { click: [fx(5), LINES_Y], after: 500 },
       { move: PARK }, { move: [645, 785], after: 1500 },
-      { shot: '@', crop: [108, 40, 812, 570] },
+      { shot: '@', crop: [143, 40, 734, 570] },
     ],
   },
   {
@@ -213,7 +215,7 @@ module.exports = [
       ...open('blank-vector', [PAINT]),
       ELLIPSE,
       { move: PARK },
-      { rec: '@', crop: [108, 40, 812, 570], every: 80 },
+      { rec: '@', crop: [143, 40, 734, 570], every: 80 },
       { wait: 700 },
       { drag: [[430, 170], [490, 230]], steps: 10, delay: 30, after: 600 },
       { click: [fx(5), LINES_Y], after: 450 },
@@ -235,23 +237,23 @@ module.exports = [
       js(`${F}.run('layers.addPixel')`), { wait: 800 },
       js(`${F}.showPanel('layers')`), { wait: 900 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 44, 1160, 700] },
+      { shot: '@', crop: [143, 44, 1124, 700] },
     ],
   },
   {
     name: 'timeline-clips-markers',
     steps: [
       ...open('hero-sprites'),
-      { click: [504, 571], after: 500 },
+      { click: [534, 571], after: 500 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 430, 806, 240] },
+      { shot: '@', crop: [143, 430, 734, 240] },
     ],
   },
   {
     // A clip set to play back and forth: pick it, set it, and play. The clip's sign shows in the clips row, and its settings in Properties (Clip).
     name: 'clip-play',
     steps: [
-      ...open('bouncing-ball'),
+      ...open('bouncing-ball', [], ['clip-play']),
       { click: [fx(8), 571], after: 500 },
       js(`${F}.run('timeline.clipBackAndForth')`), { wait: 500 },
       { move: PARK },
@@ -266,10 +268,10 @@ module.exports = [
     name: 'reference-layers',
     steps: [
       ...open('bouncing-ball'),
-      { click: [184, 649], after: 500 },
+      { click: [219, 649], after: 500 },
       js(`${F}.run('layers.toggleReference')`), { wait: 600 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 515, 560, 160] },
+      { shot: '@', crop: [143, 515, 734, 160] },
     ],
   },
   {
@@ -277,7 +279,7 @@ module.exports = [
     steps: [
       ...open('bouncing-ball', only('effects')),
       { move: PARK },
-      { rec: '@', crop: [108, 40, 1164, 680], every: 90 },
+      { rec: '@', crop: [143, 40, 1128, 680], every: 90 },
       { wait: 800 },
       { click: [1053, 694], after: 1000 },
       { click: [1134, 751], after: 1000 },
@@ -299,7 +301,7 @@ module.exports = [
       ...only('effects'),
       js(`(() => { const sc = document.querySelector('.rd-props'); const h = [...document.querySelectorAll('#rd-sec-effects *')].find((e) => e.children.length === 0 && /first to last/.test(e.textContent)); if (h) sc.scrollTop += h.getBoundingClientRect().top - sc.getBoundingClientRect().top - 150; })()`),
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 40, 1164, 750] },
+      { shot: '@', crop: [143, 40, 1128, 750] },
     ],
   },
   {
@@ -311,7 +313,7 @@ module.exports = [
       js(`(() => { const l = document.querySelector('.fx-blend-list'); l.scrollTop = l.scrollHeight; })()`),
       { wait: 300 },
       { move: [1050, 606], after: 600 },
-      { shot: '@', crop: [108, 40, 1164, 750] },
+      { shot: '@', crop: [143, 40, 1128, 750] },
     ],
   },
   {
@@ -325,7 +327,7 @@ module.exports = [
       ELLIPSE,
       { drag: [[470, 175], [565, 240]], steps: 12, delay: 20, after: 600 },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 40, 812, 700] },
+      { shot: '@', crop: [143, 40, 734, 700] },
     ],
   },
   {
@@ -334,10 +336,10 @@ module.exports = [
       ...open('bouncing-ball', []),
       // A folder inside a folder: Scene holds the ground and the Bouncing ball folder (ball and shadow).
       js(`(() => { ${F}.store().update('Folders in folders', (d) => { d.folders = { fScene: { id: 'fScene', name: 'Scene', visible: true, opacity: 1 }, fBall: { id: 'fBall', name: 'Bouncing ball', visible: true, opacity: 1, parent: 'fScene' } }; for (const l of d.layers) l.folder = l.name === 'Ground' ? 'fScene' : 'fBall'; }); return true; })()`), { wait: 900 },
-      { click: [184, 649], after: 500 },
+      { click: [219, 649], after: 500 },
       { log: `${F}.store().get().doc.layers.map((l) => l.name + ':' + (l.folder || '-')).join(' ')` },
       { move: PARK }, { move: [645, 785], after: 1200 },
-      { shot: '@', crop: [108, 505, 806, 260] },
+      { shot: '@', crop: [143, 505, 734, 260] },
     ],
   },
   {
@@ -345,9 +347,10 @@ module.exports = [
     steps: [
       ...open('blank-vector', [js(`${F}.store().update('Night sky', (d) => { d.background = '#1b2150'; d.length = 48; d.fps = 24; })`), ...only('particles')], ['particles']),
       { move: PARK },
-      { rec: '@', crop: [108, 40, 1164, 680], every: 90 },
+      { rec: '@', crop: [143, 40, 1128, 680], every: 90 },
       { wait: 900 },
-      { click: [1114, 349], after: 900 },
+      js(`document.querySelector('#rd-sec-particles')?.scrollIntoView({ block: 'start' })`), { wait: 400 },
+      { clickOn: '#rd-sec-particles button', text: 'Snow', after: 900 },
       { move: PARK, after: 500 },
       { key: 'Enter', after: 4200 },
       { key: 'Enter', after: 800 },
@@ -369,10 +372,10 @@ module.exports = [
       ...textSetup(26),
       js(`[...document.querySelectorAll('.rd-props *')].find((e) => e.children.length === 0 && e.textContent.trim() === 'Animate the letters')?.scrollIntoView({ block: 'center' })`), { wait: 600 },
       { move: PARK },
-      { rec: '@', crop: [108, 40, 1164, 680], every: 90 },
+      { rec: '@', crop: [143, 40, 1128, 680], every: 90 },
       { wait: 500 },
-      { click: [960, 491], after: 700 },
-      { click: [1054, 491], after: 700 },
+      { clickOn: '#rd-sec-text button', text: 'Fade', after: 700 },
+      { clickOn: '#rd-sec-text button', text: 'Words', after: 700 },
       { drag: [[fx(1), RULER_Y], [fx(26), RULER_Y]], steps: 50, delay: 40, after: 600 },
       { drag: [[fx(26), RULER_Y], [fx(1), RULER_Y]], steps: 40, delay: 20, after: 300 },
       { drag: [[fx(1), RULER_Y], [fx(26), RULER_Y]], steps: 50, delay: 40, after: 1200 },
@@ -388,7 +391,7 @@ module.exports = [
     steps: [
       ...open('walk-cycle', [], [], { 'timeline.pasteOver': undefined }),
       { move: [700, 740] },
-      { rec: '@', crop: [108, 40, 812, 726], every: 80 },
+      { rec: '@', crop: [143, 40, 734, 726], every: 80 },
       { wait: 700 },
       { click: [fx(1), BALL_Y], after: 500 },
       { click: [fx(3), BALL_Y], mods: ['shift'], after: 450 },

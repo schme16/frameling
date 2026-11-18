@@ -79,7 +79,7 @@ const entries = [
       { click: [560, 237] },
       { move: [640, 600] },
       L.wait(700),
-      { shot: '@', crop: [108, 44, 1164, 450] },
+      { shot: '@', crop: [143, 44, 1128, 450] },
     ],
   },
   {
@@ -94,7 +94,7 @@ const entries = [
       L.js(`(() => { const st = __frameling.store; st().update('move', (d) => { const l = d.layers[0]; const c = l.cels[l.cels.length - 1]; const v = d.drawings[c.drawingId]; const i = v.shapes.find((s) => s.type === 'instance'); i.transform.x += 150; i.transform.y -= 20; i.transform.rotation = 25; }); st().setUi({ frame: 6, selection: [] }); })()`),
       // Let the two toasts fade so they do not cover the timeline.
       L.wait(9000),
-      { shot: '@', crop: [108, 44, 1164, 700] },
+      { shot: '@', crop: [143, 44, 1128, 700] },
     ],
   },
 ];
