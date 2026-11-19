@@ -113,6 +113,10 @@ async function penStroke(x0, x1, y, n, { force, tiltX = () => 0, tiltY = () => 0
 }
 
 const strokes = () => ev(`(() => { const { doc, ui } = __frameling.store().get(); const l = doc.layers.find((x) => x.id === ui.activeLayerId) || doc.layers[doc.layers.length - 1]; return l.cels.flatMap((c) => doc.drawings[c.drawingId].shapes || []).filter((s) => s.type === 'stroke').map((s) => ({ opacity: s.opacity, thinning: s.brush.thinning, p: s.points.map((q) => q.p), y: s.points.map((q) => q.y), color: s.color })); })()`);
+/** The active layer's shapes, as id and kind, so a check can tell a line was erased whichever way the eraser rubs out. */
+const shapeList = () => ev(`(() => { const { doc, ui } = __frameling.store().get(); const l = doc.layers.find((x) => x.id === ui.activeLayerId) || doc.layers[doc.layers.length - 1]; return l.cels.flatMap((c) => (doc.drawings[c.drawingId].shapes || []).map((s) => ({ id: s.id, type: s.type }))); })()`);
+/** The line left untouched: erased whole, it's gone; rubbed out a bit, it comes back as a new shape with the bit missing. */
+const untouched = (before, after) => after.some((s) => s.id === before.id && s.type === before.type);
 const shapeCount = () => ev(`(() => { const { doc, ui } = __frameling.store().get(); const l = doc.layers.find((x) => x.id === ui.activeLayerId) || doc.layers[doc.layers.length - 1]; return l.cels.reduce((n, c) => n + (doc.drawings[c.drawingId].shapes || []).length, 0); })()`);
 
 /** The screen's rows of ink (dark pixels) in the pixel column at window x, from a capture of the window. */
@@ -220,7 +224,8 @@ async function eraserEnd() {
   begin('the eraser end erases while it is down, then the brush comes back');
   await fresh();
   await penStroke(60, 360, 150, 20, { force: () => 0.6 });
-  check((await shapeCount()) === 1, 'a line to erase');
+  const [line] = await shapeList();
+  check(!!line, 'a line to erase');
   // Chromium's protocol can't press the eraser button, so this is a pen event made in the page with the eraser bits set.
   const mid = await win_(210, 150);
   const during = await ev(`(async () => {
@@ -236,12 +241,14 @@ async function eraserEnd() {
   await sleep(200);
   check(during === 'eraser', `the tool while the eraser end was down was ${during}`);
   check((await ev('__frameling.store().get().ui.tool')) === 'brush', 'the brush came back');
-  check((await shapeCount()) === 0, 'the line was erased');
+  const afterErase = await shapeList();
+  check(line && !untouched(line, afterErase), `the line was erased: ${JSON.stringify(afterErase)}`);
   // And with the eraser end switched off in Pen and tablet, the same press draws with the brush.
   await ev(`__frameling.pen.setDevice({ eraserEnd: false })`);
   await ev(`(() => { const r = document.querySelector('.cv-root'); const fire = (type, x, y, buttons) => r.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 42, pointerType: 'pen', isPrimary: true, clientX: x, clientY: y, pressure: 0.5, button: type === 'pointerdown' ? 5 : -1, buttons })); fire('pointerdown', ${mid[0]} - 30, ${mid[1]}, 32); for (let i = 1; i <= 12; i++) fire('pointermove', ${mid[0]} - 30 + i * 5, ${mid[1]}, 32); fire('pointerup', ${mid[0]} + 30, ${mid[1]}, 0); })()`);
   await sleep(200);
-  check((await shapeCount()) === 1, 'with the eraser end off, the press drew with the brush');
+  const drawn = await shapeList();
+  check(drawn.length === afterErase.length + 1 && drawn[drawn.length - 1].type === 'stroke', `with the eraser end off, the press drew with the brush: ${JSON.stringify(drawn)}`);
 }
 
 async function barrelButtons() {
@@ -360,7 +367,8 @@ async function eraserByDevice() {
   // The eraser bit came in earlier scenarios, and once it has the second-device guess stays off: start the learning again.
   await ev(`__frameling.pen.forgetTools()`);
   await penStroke(60, 360, 150, 20, { force: () => 0.6 });
-  check((await shapeCount()) === 1, 'a line to erase');
+  const [line] = await shapeList();
+  check(!!line, 'a line to erase');
   const mid = await win_(210, 150);
   // As Chromium reported a pretend Huion under Xorg: the tip is persistentDeviceId 2, the flipped pen 3, pointerId unchanged.
   const during = await ev(`(async () => {
@@ -379,7 +387,9 @@ async function eraserByDevice() {
   await sleep(200);
   check(during[0] === "eraser", `the tool while the second device was down was ${during[0]} ${during[1]}`);
   check((await ev('__frameling.store().get().ui.tool')) === 'brush', 'the brush came back');
-  check((await shapeCount()) === 1, 'the line was erased (the short tip stroke below it is the one left)');
+  const after = await shapeList();
+  check(line && !untouched(line, after), `the line was erased: ${JSON.stringify(after)}`);
+  check(after.some((s) => s.id !== line?.id && s.type === 'stroke'), 'the short tip stroke below it is still there');
 }
 
 /** Quill's pen check on Linux, from the first step to the saved report, with pen events from the page. */
