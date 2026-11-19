@@ -4,7 +4,7 @@ import { altitudeOf, azimuthOf, leanOf } from '../../src/tablet/tilt';
 import { CATCH_UP_STEPS, Stabilizer, ropeLength, windowSize } from '../../src/tablet/stabilizer';
 import { barrelBits, firstBarrelBit, getPenHost, isLinuxDesktop, meaningOfPress, penPress, setPenHost, type PenButtonSettings } from '../../src/tablet/buttons';
 import { ToolGuess } from '../../src/tablet/tool';
-import { penFields } from '../../src/tablet/input';
+import { penFields, TOUCH_DOWN_PRESSURE } from '../../src/tablet/input';
 import { cleanPen, DEFAULT_PEN, DEFAULT_STABILIZER, PEN_TOOLS } from '../../src/tablet/settings';
 import { pinchView, PenTracker, PALM_GRACE_MS } from '../../src/tablet/touch';
 import { curveWithHandle, handleSpots } from '../../src/tablet/CurveEditor';
@@ -241,9 +241,21 @@ describe('pointer fields', () => {
     expect(f.pressure).toBeGreaterThan(0.25);
     expect([f.tiltX, f.tiltY, f.twist]).toEqual([20, -10, 90]);
   });
-  it('a zero first sample while pressed counts as a medium touch, hovering stays zero', () => {
-    expect(penFields({ pointerType: 'pen', pressure: 0, buttons: 1 }, DEFAULT_PEN.pen).pressure).toBeCloseTo(0.5, 1);
+  it('a press that says zero is the lightest touch, not a full one (X11 sends the press before any pressure)', () => {
+    const down = penFields({ type: 'pointerdown', pointerType: 'pen', pressure: 0, buttons: 1 }, DEFAULT_PEN.pen).pressure;
+    expect(down).toBeCloseTo(TOUCH_DOWN_PRESSURE, 2);
+    // The next reading (a light stroke) is above it, so the stroke starts thin and grows rather than starting fat.
+    expect(penFields({ type: 'pointermove', pointerType: 'pen', pressure: 0.04, buttons: 1 }, DEFAULT_PEN.pen).pressure).toBeGreaterThan(down);
+    // Through a soft curve too.
+    const soft = { ...DEFAULT_PEN.pen, curve: CURVE_PRESETS.soft };
+    expect(penFields({ type: 'pointerdown', pointerType: 'pen', pressure: 0, buttons: 1 }, soft).pressure).toBeLessThan(0.1);
+  });
+  it('a pen that keeps saying zero while pressed has no pressure and counts as a medium touch, hovering stays zero', () => {
+    expect(penFields({ type: 'pointermove', pointerType: 'pen', pressure: 0, buttons: 1 }, DEFAULT_PEN.pen).pressure).toBeCloseTo(0.5, 1);
     expect(penFields({ pointerType: 'pen', pressure: 0, buttons: 0 }, DEFAULT_PEN.pen).pressure).toBe(0);
+  });
+  it('a press with a real reading keeps it', () => {
+    expect(penFields({ type: 'pointerdown', pointerType: 'pen', pressure: 0.3, buttons: 1 }, DEFAULT_PEN.pen).pressure).toBeCloseTo(0.3, 2);
   });
 });
 
