@@ -906,7 +906,10 @@
     ],
     "where": "Pen check: the little cheer when a step is ticked off (the app picks one)."
   },
-  "pen.check.ready": { "text": "Press Next when you are ready for the next one.", "where": "Pen check: after a step is ticked off, while the Next button waits. Nothing moves until it is pressed." },
+  "pen.check.ready": {
+    "text": "When you're ready, just carry on with your pen, or press Next.",
+    "where": "Pen check: after a step is ticked off, while the Next button waits. The next press of the pen on the pad, or Next, starts the next step; nothing moves mid-stroke."
+  },
   "pen.check.skipped": { "text": "No worries, skipping that one.", "where": "Pen check: after Skip this one." },
   "pen.check.nopen": {
     "text": "Hmm, I can't hear a pen. Are you drawing with a mouse? If it is a tablet, its driver might need Windows Ink turned on.",

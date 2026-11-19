@@ -402,8 +402,10 @@ async function penCheckOnLinux() {
       p.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.05 });
       for (let i = 1; i <= 20; i++) { p.fire('pointermove', { buttons: 1, pressure: i / 20, x: 100 + i * 8 }); await p.wait(8); }
       p.fire('pointerup', { button: 0 });
-      for (let i = 0; i < 6; i++) { p.fire('pointermove', { tiltX: -40, tiltY: 10 }); await p.wait(8); }
-      for (let i = 0; i < 6; i++) { p.fire('pointermove', { tiltX: 40, tiltY: -10 }); await p.wait(8); }
+      p.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.3, tiltX: -40, tiltY: 10 });
+      for (let i = 0; i < 6; i++) { p.fire('pointermove', { buttons: 1, pressure: 0.3, tiltX: -40, tiltY: 10 }); await p.wait(8); }
+      for (let i = 0; i < 6; i++) { p.fire('pointermove', { buttons: 1, pressure: 0.3, tiltX: 40, tiltY: -10 }); await p.wait(8); }
+      p.fire('pointerup', { button: 0 });
     })()`);
     await sleep(200);
   };
@@ -414,6 +416,7 @@ async function penCheckOnLinux() {
   await open();
   await upToEraser();
   check((await step()) === 'Twist', `after hover, press and lean the step is ${await step()}`);
+  await click('Next');
   await click('Skip this one');
   check((await step()) === 'Eraser end', 'the eraser step is next');
   check(!(await has()), 'the "doesn\'t show up" button is there before anything was tried');
@@ -433,6 +436,7 @@ async function penCheckOnLinux() {
   await ev(`(async () => { const p = window.__pc; p.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.4 }); for (let i = 0; i < 40; i++) { p.fire('pointermove', { buttons: 1, pressure: 0.4, x: 100 + (i % 7) * 9, y: 100 + (i % 5) * 7 }); await p.wait(14); } p.fire('pointerup', { button: 0 }); })()`);
   await sleep(200);
   check((await step()) === 'Express keys and ring', `the scribble ticked: now ${await step()}`);
+  await click('Next');
   await click('Skip this one');
   await sleep(200);
   check(await click('Save the report'), 'there is a Save button at the end');
@@ -454,6 +458,7 @@ async function penCheckOnLinux() {
   fs.rmSync(reportPath, { force: true });
   await open();
   await upToEraser();
+  await click('Next');
   await click('Skip this one');
   check((await step()) === 'Eraser end', 'the eraser step is next, second time');
   await ev(`window.__pc.fire('pointerdown', { buttons: 1, button: 0, pressure: 0.3, device: 2 })`);

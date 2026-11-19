@@ -381,6 +381,25 @@ describe('offering the check', () => {
 });
 
 describe('the pen check dialog', () => {
+  it('a done step waits for Next, but pressing the pen on the pad again starts the next step and counts for it', async () => {
+    await act(async () => root.render(<PenCheck />));
+    act(() => overlays.set((o) => ({ ...o, penCheck: 'run' })));
+    for (let i = 0; i < 8; i++) fire({ x: 100 + i, t: next() });
+    expect(says()).toContain(line('pen.check.ready'));
+    // Hovering on does not move on: only a press does.
+    for (let i = 0; i < 4; i++) fire({ x: 120 + i, t: next() });
+    expect(button('Next')).toBeTruthy();
+    // No Next: just draw the press line, as a person who missed the button would.
+    fire({ type: 'pointerdown', buttons: 1, pressure: 0, t: next() });
+    for (let i = 1; i <= 20; i++) fire({ buttons: 1, pressure: 0.04 + (i / 20) * 0.96, x: 100 + i * 5, t: next() });
+    expect(says()).toContain(line('pen.check.ready'));
+    expect(step()).toBe('Lean');
+    // The stroke that finished the step goes on, and still nothing moves until the next press.
+    for (let i = 0; i < 5; i++) fire({ buttons: 1, pressure: 0.5, x: 200 + i, t: next() });
+    fire({ type: 'pointerup', t: next() });
+    expect(button('Next')).toBeTruthy();
+    act(() => root.render(<></>));
+  });
   it('asks, walks through every step on simulated pen events, saves the report, and Quill says the line', async () => {
     await act(async () => root.render(<PenCheck />));
     act(() => overlays.set((o) => ({ ...o, penCheck: 'offer' })));
@@ -534,20 +553,21 @@ describe('the pen check dialog', () => {
     expect(says()).not.toBe(line('pen.check.eraser.hidden'));
   });
 
-  it('a fast burst of events (faster than React redraws) ticks off one step and then waits for Next', async () => {
+  it('a fast burst of events (faster than React redraws) ticks steps one at a time, never mid-stroke, then waits for Next', async () => {
     await act(async () => root.render(<PenCheck />));
     act(() => startPenCheck());
     act(() => {
       const el = pad();
       for (let i = 0; i < 12; i++) el.dispatchEvent(pointer({ x: 100 + i, t: next() }));
       el.dispatchEvent(pointer({ type: 'pointerdown', buttons: 1, pressure: 0.05, t: next() }));
-      for (let i = 1; i <= 20; i++) el.dispatchEvent(pointer({ buttons: 1, pressure: i / 20, t: next() }));
+      for (let i = 1; i <= 20; i++) el.dispatchEvent(pointer({ buttons: 1, pressure: i / 20, tiltX: i % 2 ? -40 : 40, t: next() }));
     });
-    // Only Hover is ticked: the press that followed in the same burst is not counted towards the next step.
-    expect([...host.querySelectorAll('.tb-check-steps li[data-state=done]')].map((li) => li.querySelector('span')!.textContent)).toEqual(['Hover']);
+    // Hover, then the press that followed starts Press and ticks it. The rest of that stroke leans both ways, but Lean
+    // waits: a step only starts with a fresh press.
+    expect([...host.querySelectorAll('.tb-check-steps li[data-state=done]')].map((li) => li.querySelector('span')!.textContent)).toEqual(['Hover', 'Press']);
     expect(button('Next')).toBeTruthy();
     goNext();
-    expect(step()).toBe('Press');
+    expect(step()).toBe('Lean');
   });
 
   it('skipping marks a step skipped, and closing half way is offered again next time', async () => {

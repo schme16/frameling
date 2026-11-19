@@ -6,7 +6,7 @@ export const bodies: Record<string, string> = {
 
 ## What he asks for
 
-One thing at a time, on a grey pad. He ticks each off when he sees it, and you can **Skip this one** if your pen can't do it.
+One thing at a time, on a grey pad. He ticks each off when he sees it, then waits: press **Next**, or just carry on with your pen and the next one starts. You can **Skip this one** if your pen can't do it.
 
 1. **Hover** the pen just above the pad.
 2. **Press** from very light to very hard in one line.

@@ -231,6 +231,9 @@ function Check({ start }: { start: 'offer' | 'run' }) {
 
   const feed = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const n = e.nativeEvent;
+    // A step that is done waits for Next, but a fresh press of the pen (the tip, the eraser end or a button) means you
+    // have moved on: the next step starts and this press counts for it. Never mid-stroke, so nothing moves under you.
+    if (doneRef.current && n.type === 'pointerdown' && n.pointerType === 'pen') goNext();
     if (n.type === 'pointerdown') {
       last.current = null;
       try {
