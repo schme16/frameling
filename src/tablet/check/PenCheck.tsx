@@ -12,6 +12,7 @@ import { getPen } from '../settings';
 import { CHECK_STEPS, CheckRecorder, windowSystem, type CheckStepId, type PenSample, type SkipReason } from './recorder';
 import { checkMemory, closePenCheck, gatherEnv, reduceCheck, saveReport, setCheckMemory, startFlow } from './state';
 import { cssVar } from '../../canvas/theme';
+import { fitPad, padPoint } from '../pad';
 import '../tablet.css';
 
 const STEP_TITLE: Record<CheckStepId, string> = {
@@ -210,10 +211,9 @@ function Check({ start }: { start: 'offer' | 'run' }) {
   const draw = (e: PointerEvent, drawing: boolean) => {
     const c = padRef.current;
     if (!c || e.pointerType !== 'pen') return;
-    const r = c.getBoundingClientRect();
-    const k = r.width ? c.width / r.width : 1;
-    const x = (e.clientX - r.left) * k;
-    const y = (e.clientY - r.top) * k;
+    // A new line: the canvas first matches the size it is shown at (its 720 x 260 was stretched to the dialog's width).
+    if (drawing && !last.current) fitPad(c);
+    const { x, y, k } = padPoint(e.clientX, e.clientY, c.getBoundingClientRect(), c.width, c.height);
     const g = c.getContext('2d');
     if (g && drawing) {
       g.lineCap = 'round';

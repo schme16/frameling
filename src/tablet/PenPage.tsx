@@ -11,6 +11,7 @@ import { penFields } from './input';
 import { PEN_TOOLS, penStore, resetPen, setPenDevice, setToolPen, setTouch, type OneFinger, type PenTool } from './settings';
 import { altitudeOf, azimuthOf } from './tilt';
 import { cssVar } from '../canvas/theme';
+import { fitPad, padPoint } from './pad';
 import './tablet.css';
 
 const TOOL_LABEL: Record<PenTool, string> = { brush: 'Brush (pixel layers)', pencil: 'Pencil', eraser: 'Eraser', spray: 'Spray', shade: 'Shade', dither: 'Dither', 'soft-brush': 'Soft brush', airbrush: 'Airbrush', highlighter: 'Highlighter', 'soft-eraser': 'Soft eraser', smudge: 'Smudge', charcoal: 'Chalk and charcoal', 'pixel-brush': 'Pixel brush' };
@@ -49,11 +50,7 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
 
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
-    const r = c.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    c.width = Math.round(r.width * dpr);
-    c.height = Math.round(r.height * dpr);
+    if (c) fitPad(c);
   }, []);
 
   const sample = (e: PointerEvent | React.PointerEvent, draw: boolean) => {
@@ -72,10 +69,9 @@ function TestPad({ onRaw }: { onRaw: (raw: number | null) => void }) {
     setRead({ type: e.pointerType, raw: e.pressure, out: f.pressure, tiltX: f.tiltX, tiltY: f.tiltY, twist: f.twist, parts });
     onRaw(e.pointerType === 'pen' ? e.pressure : null);
     if (!draw) return;
-    const rect = c.getBoundingClientRect();
-    const k = c.width / rect.width;
-    const x = (e.clientX - rect.left) * k;
-    const y = (e.clientY - rect.top) * k;
+    // A new line: the canvas first matches the size it is shown at (Preferences may have been opening, or resized).
+    if (!last.current) fitPad(c);
+    const { x, y, k } = padPoint(e.clientX, e.clientY, c.getBoundingClientRect(), c.width, c.height);
     const g = c.getContext('2d');
     if (!g) return;
     g.lineCap = 'round';
